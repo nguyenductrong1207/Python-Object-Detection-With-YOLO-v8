@@ -241,8 +241,9 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
         file_dialog = QFileDialog()
         file_path, _ = file_dialog.getOpenFileName(self, "Choose Image", "", "Image Files (*.png *.jpg *.bmp)")
         if file_path:
-            self.image_label.setPixmap(QPixmap(file_path).scaled(600, 600))
-            self.image_label.setText(file_path)
+            pixmap = QPixmap(file_path).scaled(600, 600, aspectRatioMode=1)
+            self.image_label.setPixmap(pixmap)
+            self.image_label.setText("")
 
     def send_image(self):
         try:

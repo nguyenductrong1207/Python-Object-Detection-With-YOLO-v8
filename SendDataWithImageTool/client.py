@@ -4,8 +4,9 @@ import threading
 import json
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QTableWidget, QTableWidgetItem, QLineEdit, QComboBox
+    QLabel, QTableWidget, QTableWidgetItem, QLineEdit, QComboBox, QFileDialog, QPushButton, QSplitter
 )
+from PyQt5.QtGui import QPixmap
 
 class ClientApp(QMainWindow):
     def __init__(self):
@@ -16,11 +17,21 @@ class ClientApp(QMainWindow):
 
     def init_ui(self):
         self.setWindowTitle("Client View")
-        self.setFixedSize(800, 600)
+        self.setFixedSize(1400, 600)
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
-        layout = QVBoxLayout(central_widget)
+        layout = QHBoxLayout(central_widget)
+
+        # Splitter to divide left and right parts
+        splitter = QSplitter()
+        layout.addWidget(splitter)
+
+        # Left part
+        left_widget = QWidget()
+        left_widget.setFixedWidth(700)
+        left_layout = QVBoxLayout(left_widget)
+        splitter.addWidget(left_widget)
 
         self.file_layout = QHBoxLayout()
         self.file_label = QLabel("Excel file path:")
@@ -28,7 +39,7 @@ class ClientApp(QMainWindow):
         self.file_edit.setReadOnly(True)
         self.file_layout.addWidget(self.file_label)
         self.file_layout.addWidget(self.file_edit)
-        layout.addLayout(self.file_layout)
+        left_layout.addLayout(self.file_layout)
 
         self.sheet_layout = QHBoxLayout()
         self.sheet_label = QLabel("Sheet name:")
@@ -36,13 +47,26 @@ class ClientApp(QMainWindow):
         self.sheet_combo.setEnabled(False)
         self.sheet_layout.addWidget(self.sheet_label)
         self.sheet_layout.addWidget(self.sheet_combo)
-        layout.addLayout(self.sheet_layout)
+        left_layout.addLayout(self.sheet_layout)
 
         self.label = QLabel("Received Data:")
-        layout.addWidget(self.label)
+        left_layout.addWidget(self.label)
 
         self.result_table = QTableWidget()
-        layout.addWidget(self.result_table)
+        left_layout.addWidget(self.result_table)
+
+        # Right part for image display
+        right_widget = QWidget()
+        right_widget.setFixedWidth(700)
+        right_layout = QVBoxLayout(right_widget)
+        splitter.addWidget(right_widget)
+
+        self.image_label = QLabel("No image selected")
+        right_layout.addWidget(self.image_label)
+
+        self.choose_image_button = QPushButton("Choose Image")
+        self.choose_image_button.clicked.connect(self.choose_image)
+        right_layout.addWidget(self.choose_image_button)
 
         self.show()
 
@@ -62,35 +86,58 @@ class ClientApp(QMainWindow):
                     if not part:
                         break
                     data += part
-                self.display_data(data)
+                self.process_data(data)
                 client_socket.close()
             except Exception as e:
                 print(f"Error in server: {e}")
 
-    def display_data(self, data):
+    def process_data(self, data):
         try:
-            data = json.loads(data.decode('utf-8'))
-            self.file_edit.setText(data['file_path'])
-            self.sheet_combo.clear()
-            self.sheet_combo.addItem(data['sheet_name'])
-            self.sheet_combo.setCurrentText(data['sheet_name'])
-
-            self.result_table.setRowCount(0)  # Clear previous data
-            self.result_table.setColumnCount(4)
-            self.result_table.setHorizontalHeaderLabels(["Money", "Time Repeated", "Total", "Sheet Name"])
-
-            for result in data['results']:
-                row_position = self.result_table.rowCount()
-                self.result_table.insertRow(row_position)
-                self.result_table.setItem(row_position, 0, QTableWidgetItem(result['money']))
-                self.result_table.setItem(row_position, 1, QTableWidgetItem(result['time_repeated']))
-                self.result_table.setItem(row_position, 2, QTableWidgetItem(result['total']))
-                self.result_table.setItem(row_position, 3, QTableWidgetItem(result['sheet_name']))
-
-            # Make the table read-only
-            self.result_table.setEditTriggers(QTableWidget.NoEditTriggers)
+            try:
+                data = json.loads(data.decode('utf-8'))
+                self.display_data(data)
+            except json.JSONDecodeError:
+                self.display_image(data)
         except Exception as e:
-            print(f"Error displaying data: {e}")
+            print(f"Error processing data: {e}")
+
+    def display_data(self, data):
+        self.file_edit.setText(data['file_path'])
+        self.sheet_combo.clear()
+        self.sheet_combo.addItem(data['sheet_name'])
+        self.sheet_combo.setCurrentText(data['sheet_name'])
+
+        self.result_table.setRowCount(0)  # Clear previous data
+        self.result_table.setColumnCount(4)
+        self.result_table.setHorizontalHeaderLabels(["Money", "Time Repeated", "Total", "Sheet Name"])
+
+        for result in data['results']:
+            row_position = self.result_table.rowCount()
+            self.result_table.insertRow(row_position)
+            self.result_table.setItem(row_position, 0, QTableWidgetItem(result['money']))
+            self.result_table.setItem(row_position, 1, QTableWidgetItem(result['time_repeated']))
+            self.result_table.setItem(row_position, 2, QTableWidgetItem(result['total']))
+            self.result_table.setItem(row_position, 3, QTableWidgetItem(result['sheet_name']))
+
+        # Make the table read-only
+        self.result_table.setEditTriggers(QTableWidget.NoEditTriggers)
+
+    def display_image(self, data):
+        try:
+            pixmap = QPixmap()
+            pixmap.loadFromData(data)
+            self.image_label.setPixmap(pixmap.scaled(700, 600))
+            self.image_label.setText("")
+        except Exception as e:
+            print(f"Error displaying image: {e}")
+
+    def choose_image(self):
+        file_dialog = QFileDialog()
+        file_path, _ = file_dialog.getOpenFileName(self, "Choose Image", "", "Image Files (*.png *.jpg *.bmp)")
+        if file_path:
+            with open(file_path, 'rb') as file:
+                data = file.read()
+                self.display_image(data)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
