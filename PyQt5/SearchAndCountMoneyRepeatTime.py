@@ -25,9 +25,9 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
         self.browse_button.clicked.connect(self.browse_file)
 
         # Set fixed heights for the edit field and button
-        self.file_edit.setFixedHeight(30)
+        self.file_edit.setFixedHeight(35)
         self.browse_button.setFixedWidth(130)
-        self.browse_button.setFixedHeight(30)
+        self.browse_button.setFixedHeight(35)
 
         file_layout.addWidget(self.file_label)
         file_layout.addWidget(self.file_edit)
@@ -40,11 +40,11 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
         self.money_label = QLabel("Money amount:")
         self.money_edit = QLineEdit()
 
-        # Set fixed heights for the combo box and edit field
+        # Set fixed heights and widths for the combo box and edit field
         self.sheet_combo.setFixedWidth(300)
-        self.sheet_combo.setFixedHeight(30)
+        self.sheet_combo.setFixedHeight(35)
         self.money_edit.setFixedWidth(300)
-        self.money_edit.setFixedHeight(30)
+        self.money_edit.setFixedHeight(35)
 
         sheet_and_money_layout.addWidget(self.sheet_label)
         sheet_and_money_layout.addWidget(self.sheet_combo)
