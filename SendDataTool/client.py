@@ -26,6 +26,8 @@ class ClientApp(QMainWindow):
         self.file_label = QLabel("Excel file path:")
         self.file_edit = QLineEdit()
         self.file_edit.setReadOnly(True)
+        self.file_edit.setFixedHeight(35)
+        
         self.file_layout.addWidget(self.file_label)
         self.file_layout.addWidget(self.file_edit)
         layout.addLayout(self.file_layout)
@@ -34,6 +36,9 @@ class ClientApp(QMainWindow):
         self.sheet_label = QLabel("Sheet name:")
         self.sheet_combo = QComboBox()
         self.sheet_combo.setEnabled(False)
+        self.sheet_combo.setFixedWidth(240)
+        self.sheet_combo.setFixedHeight(35)
+        
         self.sheet_layout.addWidget(self.sheet_label)
         self.sheet_layout.addWidget(self.sheet_combo)
         layout.addLayout(self.sheet_layout)

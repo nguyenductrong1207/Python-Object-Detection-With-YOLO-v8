@@ -55,133 +55,134 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
         sheet_and_money_layout.addWidget(self.money_edit)
         layout.addLayout(sheet_and_money_layout)
 
-        self.search_button = QPushButton("Search")
-        self.search_button.clicked.connect(self.search_money)
-        self.search_button.setFixedHeight(35)
-        layout.addWidget(self.search_button)
-
+        buttons_layout = QHBoxLayout()
+        
         self.clear_button = QPushButton("Clear")
         self.clear_button.clicked.connect(self.clear_results)
         self.clear_button.setFixedHeight(35)
-        layout.addWidget(self.clear_button)
+        self.clear_button.setFixedWidth(230)
+        buttons_layout.addWidget(self.clear_button)
+        
+        self.search_button = QPushButton("Search")
+        self.search_button.clicked.connect(self.search_money)
+        self.search_button.setFixedHeight(35)
+        self.search_button.setFixedWidth(230)
+        buttons_layout.addWidget(self.search_button)
 
         self.send_button = QPushButton("Send")
         self.send_button.clicked.connect(self.send_all_data)
         self.send_button.setFixedHeight(35)
-        layout.addWidget(self.send_button)
+        self.send_button.setFixedWidth(230)
+        buttons_layout.addWidget(self.send_button)
+        
+        layout.addLayout(buttons_layout)
 
         self.result_table = QTableWidget()
         self.result_table.setColumnCount(5)
         self.result_table.setHorizontalHeaderLabels(["Money", "Time Repeated", "Total", "Sheet Name", "Action"])
+        self.result_table.setColumnWidth(4, 200)  # Make the action column wider
         layout.addWidget(self.result_table)
 
         self.show()
 
     def browse_file(self):
         file_dialog = QFileDialog()
-        file_path, _ = file_dialog.getOpenFileName(self, "Open Excel File", "", "Excel Files (*.xlsx *.xls)")
+        file_path, _ = file_dialog.getOpenFileName(self, "Open Excel File", "", "Excel Files (*.xls *.xlsx)")
         if file_path:
             self.file_edit.setText(file_path)
             self.load_sheets(file_path)
-            self.result_table.setRowCount(0)
-            self.start_watching(file_path)
 
     def load_sheets(self, file_path):
         try:
-            excel_file = pd.ExcelFile(file_path)
+            self.df_dict = pd.read_excel(file_path, sheet_name=None)
             self.sheet_combo.clear()
-            self.sheet_combo.addItems(excel_file.sheet_names)
-            self.sheet_combo.setVisible(True)
+            self.sheet_combo.addItems(self.df_dict.keys())
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to read Excel file: {e}")
-
+            QMessageBox.critical(self, "Error", str(e))
+            
     def start_watching(self, file_path):
         event_handler = FileChangeHandler(self.send_data, file_path)
         self.observer.schedule(event_handler, path=file_path, recursive=False)
         self.observer.start()
 
-    def send_data(self, file_path):
+    def send_single_data(self, money, count, total, sheet_name):
         try:
-            server_ip = '127.0.0.1'
+            server_ip = '127.0.0.1'  # Replace with the client's IP address
             server_port = 12345
-            with open(file_path, 'rb') as file:
-                data = file.read()
-            
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.connect((server_ip, server_port))
-                s.sendall(data)
-            print(f"Data sent to {server_ip}:{server_port}")
-        except Exception as e:
-            print(f"Error sending data: {e}")
-
-    def send_all_data(self):
-        try:
             data = {
-                "file_path": self.file_edit.text(),
-                "sheet_name": self.sheet_combo.currentText(),
-                "money_amount": self.money_edit.text(),
-                "results": []
+                'file_path': self.file_edit.text(),
+                'sheet_name': sheet_name,
+                'results': [{'money': money, 'time_repeated': str(count), 'total': str(total), 'sheet_name': sheet_name}]
             }
-            for row in range(self.result_table.rowCount()):
-                result = {
-                    "money": self.result_table.item(row, 0).text(),
-                    "time_repeated": self.result_table.item(row, 1).text(),
-                    "total": self.result_table.item(row, 2).text(),
-                    "sheet_name": self.result_table.item(row, 3).text(),
-                }
-                data["results"].append(result)
-
-            server_ip = '127.0.0.1'
-            server_port = 12345
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect((server_ip, server_port))
                 s.sendall(json.dumps(data).encode('utf-8'))
-            print(f"All Data sent to {server_ip}:{server_port}")
+            QMessageBox.information(self, "Success", "Data sent to client.")
         except Exception as e:
-            print(f"Error sending data: {e}")
+            QMessageBox.critical(self, "Error", str(e))
+
+    def send_all_data(self):
+        try:
+            server_ip = '127.0.0.1'  # Replace with the client's IP address
+            server_port = 12345
+            data = {
+                'file_path': self.file_edit.text(),
+                'sheet_name': self.sheet_combo.currentText(),
+                'results': []
+            }
+            for row in range(self.result_table.rowCount()):
+                money = self.result_table.item(row, 0).text()
+                time_repeated = self.result_table.item(row, 1).text()
+                total = self.result_table.item(row, 2).text()
+                sheet_name = self.result_table.item(row, 3).text()
+                data['results'].append({
+                    'money': money,
+                    'time_repeated': time_repeated,
+                    'total': total,
+                    'sheet_name': sheet_name
+                })
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect((server_ip, server_port))
+                s.sendall(json.dumps(data).encode('utf-8'))
+            QMessageBox.information(self, "Success", "All data sent to client.")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", str(e))
 
     def search_money(self):
-        file_path = self.file_edit.text()
-        sheet_name = self.sheet_combo.currentText()
-        money_amount = self.money_edit.text()
-
-        if not file_path or not money_amount:
-            QMessageBox.warning(self, "Warning", "Please enter the file path and money amount.")
+        money_amount = self.money_edit.text().strip()
+        if not money_amount:
+            QMessageBox.warning(self, "Input Error", "Please enter a money amount.")
             return
 
-        try:
-            df = pd.read_excel(file_path, sheet_name=sheet_name)
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to read Excel file: {e}")
-            return
+        current_sheet = self.sheet_combo.currentText()
+        df = self.df_dict[current_sheet]
 
-        if money_amount.isdigit():
-            money_amount = int(money_amount)
-        else:
-            try:
-                money_amount = float(money_amount.replace(',', ''))
-            except ValueError:
-                QMessageBox.critical(self, "Error", "Invalid money amount format.")
-                return
+        result = df[df.apply(lambda row: row.astype(str).str.contains(money_amount).any(), axis=1)]
+        count = len(result)
 
-        flat_list = df.values.flatten()
-        count = (flat_list == money_amount).sum()
-
-        row_position = 0
+        row_position = self.result_table.rowCount()
         self.result_table.insertRow(row_position)
-        self.result_table.setItem(row_position, 0, QTableWidgetItem(f"{money_amount:,}"))
-        if count == 0:
-            self.result_table.setItem(row_position, 1, QTableWidgetItem("Non-existence"))
-            self.result_table.setItem(row_position, 2, QTableWidgetItem(""))
-        else:
-            self.result_table.setItem(row_position, 1, QTableWidgetItem(str(count)))
-            self.result_table.setItem(row_position, 2, QTableWidgetItem(f"{money_amount * count:,}"))
+        self.result_table.setItem(row_position, 0, QTableWidgetItem(money_amount))
+        self.result_table.setItem(row_position, 1, QTableWidgetItem(str(count)))
+        self.result_table.setItem(row_position, 2, QTableWidgetItem(str(count * float(money_amount))))
+        self.result_table.setItem(row_position, 3, QTableWidgetItem(current_sheet))
 
-        self.result_table.setItem(row_position, 3, QTableWidgetItem(sheet_name))
-
+        action_layout = QHBoxLayout()
+        
+        send_button = QPushButton("Send")
+        send_button.setFixedHeight(25)
+        send_button.clicked.connect(lambda: self.send_single_data(money_amount, count, count * float(money_amount), current_sheet))
+        action_layout.addWidget(send_button)
+        
         delete_button = QPushButton("Delete")
+        delete_button.setFixedHeight(25)
         delete_button.clicked.connect(lambda: self.confirm_delete_row(row_position))
-        self.result_table.setCellWidget(row_position, 4, delete_button)
+        action_layout.addWidget(delete_button)
+        
+        action_widget = QWidget()
+        action_widget.setLayout(action_layout)
+        
+        self.result_table.setCellWidget(row_position, 4, action_widget)
 
     def confirm_delete_row(self, row):
         reply = QMessageBox.question(self, 'Confirm Delete', 'Are you sure you want to delete this row?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
