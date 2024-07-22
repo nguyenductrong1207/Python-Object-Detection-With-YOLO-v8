@@ -91,6 +91,7 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
         self.result_table.setColumnCount(5)
         self.result_table.setFixedWidth(700)
         self.result_table.setHorizontalHeaderLabels(["Money", "Time Repeated", "Total", "Sheet Name", "Action"])
+        self.result_table.setColumnWidth(4, 150)  # Make the action column wider
         left_layout.addWidget(self.result_table)
 
         # Right part for image selection and display
@@ -157,9 +158,22 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
         self.result_table.setItem(row_position, 2, QTableWidgetItem(str(count * float(money_amount))))
         self.result_table.setItem(row_position, 3, QTableWidgetItem(current_sheet))
 
+        action_layout = QHBoxLayout()
+        
         send_button = QPushButton("Send")
+        send_button.setFixedHeight(25)
         send_button.clicked.connect(lambda: self.send_single_data(money_amount, count, count * float(money_amount), current_sheet))
-        self.result_table.setCellWidget(row_position, 4, send_button)
+        action_layout.addWidget(send_button)
+        
+        delete_button = QPushButton("Delete")
+        delete_button.setFixedHeight(25)
+        delete_button.clicked.connect(lambda: self.confirm_delete_row(row_position))
+        action_layout.addWidget(delete_button)
+        
+        action_widget = QWidget()
+        action_widget.setLayout(action_layout)
+        
+        self.result_table.setCellWidget(row_position, 4, action_widget)
 
     def send_single_data(self, money, count, total, sheet_name):
         try:
@@ -203,6 +217,15 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
             QMessageBox.information(self, "Success", "All data sent to client.")
         except Exception as e:
             QMessageBox.critical(self, "Error", str(e))
+
+    def confirm_delete_row(self, row):
+        reply = QMessageBox.question(self, 'Confirm Delete', 'Are you sure you want to delete this row?',
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            self.delete_row(row)
+
+    def delete_row(self, row):
+        self.result_table.removeRow(row)
 
     def choose_image(self):
         options = QFileDialog.Options()
