@@ -134,10 +134,13 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
             QMessageBox.critical(self, "Error", str(e))
 
     def clear_results(self):
-        self.result_table.setRowCount(0)
-        self.file_edit.clear()
-        self.sheet_combo.clear()
-        self.money_edit.clear()
+        reply = QMessageBox.question(self, 'Confirm Clear', 'Are you sure you want to clear the results?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            self.result_table.setRowCount(0)
+            self.file_edit.clear()
+            self.sheet_combo.clear()
+            self.sheet_combo.setVisible(False)
+            self.money_edit.clear()
 
     def search_money(self):
         money_amount = self.money_edit.text().strip()
@@ -219,13 +222,9 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
             QMessageBox.critical(self, "Error", str(e))
 
     def confirm_delete_row(self, row):
-        reply = QMessageBox.question(self, 'Confirm Delete', 'Are you sure you want to delete this row?',
-                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        reply = QMessageBox.question(self, 'Confirm Delete', 'Are you sure you want to delete this row?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
-            self.delete_row(row)
-
-    def delete_row(self, row):
-        self.result_table.removeRow(row)
+            self.result_table.removeRow(row)
 
     def choose_image(self):
         options = QFileDialog.Options()

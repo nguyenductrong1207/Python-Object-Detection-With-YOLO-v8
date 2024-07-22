@@ -108,7 +108,7 @@ class ClientApp(QMainWindow):
             self.sheet_combo.addItem(data['sheet_name'])
             self.sheet_combo.setCurrentText(data['sheet_name'])
 
-            # self.result_table.setRowCount(0)  # Clear previous data
+            self.result_table.setRowCount(0)  # Clear previous data
             self.result_table.setColumnCount(4)
             self.result_table.setHorizontalHeaderLabels(["Money", "Time Repeated", "Total", "Sheet Name"])
 
