@@ -329,7 +329,8 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
             # Set the chosen image path
             self.image_path = file_path  
             # Load the image and scale it
-            pixmap = QPixmap(file_path).scaled(600, 600, aspectRatioMode=1)  
+            # pixmap = QPixmap(file_path).scaled(600, 600, aspectRatioMode=1)  
+            pixmap = QPixmap(file_path)
             # Display the image in the label
             self.image_label.setPixmap(pixmap) 
             

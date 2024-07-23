@@ -238,14 +238,21 @@ class ClientApp(QMainWindow):
             # Save current image version to stack
             if self.image_label.pixmap() is not None:
                 current_image = self.image_label.pixmap().toImage()
-                self.image_stack.append(current_image)
+                current_width = self.image_label.pixmap().width()
+                current_height = self.image_label.pixmap().height()
+                self.image_stack.append({
+                    'image': current_image,
+                    'width': current_width,
+                    'height': current_height
+                })
             
             # Open a file to write the image data
             with open("received_image.png", "wb") as file:  
                 # Write the image data to the file
                 file.write(data)  
             # Load and scale the image
-            pixmap = QPixmap("received_image.png").scaled(600, 600, aspectRatioMode=1)  
+            # pixmap = QPixmap("received_image.png").scaled(600, 600, aspectRatioMode=1)  
+            pixmap = QPixmap("received_image.png")
             # Display the image in the label
             self.image_label.setPixmap(pixmap)  
             # Clear the text "No image selected" in the label
@@ -264,27 +271,47 @@ class ClientApp(QMainWindow):
     # Function for Editing the Getting Image
     def edit_image(self):
         dialog = ResizeImageDialog(self)
+        
+        current_image = self.image_label.pixmap().toImage()
+        current_width = self.image_label.pixmap().width()
+        current_height = self.image_label.pixmap().height()
+            
+        dialog.height_edit.setText(str(current_height))
+        dialog.width_edit.setText(str(current_width))
+        
         if dialog.conver_button.clicked:
             dialog.conver_button.clicked.connect(self.convert_to_grayscale)
             
         if dialog.exec_() == QDialog.Accepted:
-            height_text = dialog.height_edit.text()
-            width_text = dialog.width_edit.text()
-            
-            if height_text.isdigit() and width_text.isdigit():
-                height = int(height_text)
-                width = int(width_text)
-                if height > 0 and width > 0 and self.image_label.pixmap() is not None: 
-                    pixmap = self.image_label.pixmap().scaled(width, height)
-                    self.image_label.setPixmap(pixmap)
-                    # Save the edited image to the stack
-                    self.image_stack.append(pixmap.toImage())
+            height = int(dialog.height_edit.text())
+            width = int(dialog.width_edit.text())
+            if height > 0 and width > 0 and self.image_label.pixmap() is not None: 
+                # Save the current image to the stack before editing
+                self.image_stack.append({
+                    'image': current_image,
+                    'width': current_width,
+                    'height': current_height
+                })
+                
+                pixmap = self.image_label.pixmap().scaled(width, height)
+                self.image_label.setPixmap(pixmap)
             else:
                 QMessageBox.warning(self, "Input Error", "Please enter valid height and width to resize Image")
                 
     def convert_to_grayscale(self):
         pixmap = self.image_label.pixmap()
         if pixmap is not None:
+            current_image = pixmap.toImage()
+            current_width = pixmap.width()
+            current_height = pixmap.height()
+            
+            # Save the current image to the stack before converting
+            self.image_stack.append({
+                'image': current_image,
+                'width': current_width,
+                'height': current_height
+            })
+                
             qimage = pixmap.toImage()
             cv_image = self.qimage_to_cvimage(qimage)
             gray_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
@@ -303,11 +330,16 @@ class ClientApp(QMainWindow):
           
     def go_back_change(self):
         if self.image_stack:
-            previous_image = self.image_stack.pop()
-            pixmap = QPixmap.fromImage(previous_image).scaled(600, 600, aspectRatioMode=1)
+            previous_version = self.image_stack.pop()
+            previous_image = previous_version['image']
+            previous_width = previous_version['width']
+            previous_height = previous_version['height']
+            
+            pixmap = QPixmap.fromImage(previous_image).scaled(previous_width, previous_height, aspectRatioMode=1)
             self.image_label.setPixmap(pixmap)
         else:
-            QMessageBox.warning(self, "No Previous Image", "No previous image to go back to.")
+            QMessageBox.warning(self, "No Previous Image", "No previous image to go back")
+
 
     #############################################################################################
     # Function for Sending Back the Editting Image
