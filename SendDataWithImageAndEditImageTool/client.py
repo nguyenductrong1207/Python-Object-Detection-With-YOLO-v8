@@ -4,7 +4,7 @@ import threading
 import json
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QTableWidget, QTableWidgetItem, QLineEdit, QComboBox, QSplitter, QMessageBox
+    QLabel, QTableWidget, QTableWidgetItem, QLineEdit, QComboBox, QSplitter, QMessageBox, QPushButton
 )
 from PyQt5.QtGui import QPixmap
 
@@ -100,15 +100,38 @@ class ClientApp(QMainWindow):
         
         #########################################################################################
 
+        # Create a layout for the image buttons
+        buttons_layout = QHBoxLayout()  
+
+        # Create send button and add to the buttons layout
+        self.edit_button = QPushButton("Edit Image")
+        self.edit_button.clicked.connect(self.edit_image)  
+        self.edit_button.setFixedHeight(35)  
+        self.edit_button.setVisible(False)
+        buttons_layout.addWidget(self.edit_button) 
+         
+        # Create send button and add to the buttons layout
+        self.send_button = QPushButton("Send")
+        self.send_button.clicked.connect(self.send_image)  
+        self.send_button.setFixedHeight(35)  
+        self.send_button.setVisible(False)
+        buttons_layout.addWidget(self.send_button) 
+                 
+        # Add the buttons layout to the right layout
+        right_layout.addLayout(buttons_layout) 
+        
+        #########################################################################################
+       
         # Create label for image and add to the right layout
-        self.image_label_title = QLabel("Image Sent") 
-        right_layout.addWidget(self.image_label_title)  
+        self.image_label_title = QLabel("") 
+        right_layout.addWidget(self.image_label_title)
         
         # Create label to display the image and add to the right layout
         self.image_label = QLabel("No image received")  
         right_layout.addWidget(self.image_label) 
 
         #########################################################################################
+        
         # Show the main window
         self.show()  
     
@@ -209,9 +232,26 @@ class ClientApp(QMainWindow):
             self.image_label.setPixmap(pixmap)  
             # Clear the text "No image selected" in the label
             self.image_label.setText("") 
+            # Set text for the image_label_title label
+            self.image_label_title.setText("Image Sent")
+            # Set Visible for Edit Image and Send Button
+            self.edit_button.setVisible(True)
+            self.send_button.setVisible(True)
             
         except Exception as e:
             QMessageBox.critical(self, "Error displaying image: ", str(e)) 
+         
+    #############################################################################################
+    # Function for Editing the Getting Image
+    def edit_image(self):
+        
+        return print("Edit")
+                 
+    #############################################################################################
+    # Function for Sending Back the Editting Image
+    def send_image(self):
+        
+        return print("Send")
             
 #################################################################################################
 if __name__ == "__main__":
