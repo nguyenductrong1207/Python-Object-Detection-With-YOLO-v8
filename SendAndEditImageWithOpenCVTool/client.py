@@ -15,10 +15,12 @@ from PyQt5.QtCore import QBuffer, QByteArray
 class ClientApp(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.init_ui() 
+        self.init_ui()  
         # Start the server in a separate thread
         self.server_thread = threading.Thread(target=self.start_server, daemon=True)  
         self.server_thread.start()
+        # Stack to store image versions
+        self.image_stack = [] 
 
     def init_ui(self):
         self.setWindowTitle("Client View")  
@@ -113,6 +115,13 @@ class ClientApp(QMainWindow):
         self.edit_button.setFixedHeight(35)  
         self.edit_button.setVisible(False)
         buttons_layout.addWidget(self.edit_button) 
+        
+        # Create go back button and add to the buttons layout
+        self.go_back_button = QPushButton("Go Back")
+        self.go_back_button.clicked.connect(self.go_back_change)
+        self.go_back_button.setFixedHeight(35)  
+        self.go_back_button.setVisible(False)
+        buttons_layout.addWidget(self.go_back_button) 
          
         # Create send button and add to the buttons layout
         self.send_button = QPushButton("Send")
@@ -226,6 +235,11 @@ class ClientApp(QMainWindow):
     # Function for Displaying the Getting Image
     def display_image(self, data):
         try:
+            # Save current image version to stack
+            if self.image_label.pixmap() is not None:
+                current_image = self.image_label.pixmap().toImage()
+                self.image_stack.append(current_image)
+            
             # Open a file to write the image data
             with open("received_image.png", "wb") as file:  
                 # Write the image data to the file
@@ -241,6 +255,7 @@ class ClientApp(QMainWindow):
             # Set Visible for Edit Image and Send Button
             self.edit_button.setVisible(True)
             self.send_button.setVisible(True)
+            self.go_back_button.setVisible(True)
             
         except Exception as e:
             QMessageBox.critical(self, "Error displaying image: ", str(e)) 
@@ -253,11 +268,19 @@ class ClientApp(QMainWindow):
             dialog.conver_button.clicked.connect(self.convert_to_grayscale)
             
         if dialog.exec_() == QDialog.Accepted:
-            height = int(dialog.height_edit.text())
-            width = int(dialog.width_edit.text())
-            if height > 0 and width > 0 and self.image_label.pixmap() is not None: 
-                pixmap = self.image_label.pixmap().scaled(width, height)
-                self.image_label.setPixmap(pixmap)
+            height_text = dialog.height_edit.text()
+            width_text = dialog.width_edit.text()
+            
+            if height_text.isdigit() and width_text.isdigit():
+                height = int(height_text)
+                width = int(width_text)
+                if height > 0 and width > 0 and self.image_label.pixmap() is not None: 
+                    pixmap = self.image_label.pixmap().scaled(width, height)
+                    self.image_label.setPixmap(pixmap)
+                    # Save the edited image to the stack
+                    self.image_stack.append(pixmap.toImage())
+            else:
+                QMessageBox.warning(self, "Input Error", "Please enter valid height and width to resize Image")
                 
     def convert_to_grayscale(self):
         pixmap = self.image_label.pixmap()
@@ -277,7 +300,15 @@ class ClientApp(QMainWindow):
         ptr.setsize(height * width * 4)
         arr = np.array(ptr).reshape((height, width, 4))
         return arr[:, :, :3]  
-                 
+          
+    def go_back_change(self):
+        if self.image_stack:
+            previous_image = self.image_stack.pop()
+            pixmap = QPixmap.fromImage(previous_image).scaled(600, 600, aspectRatioMode=1)
+            self.image_label.setPixmap(pixmap)
+        else:
+            QMessageBox.warning(self, "No Previous Image", "No previous image to go back to.")
+
     #############################################################################################
     # Function for Sending Back the Editting Image
     def send_image(self):
