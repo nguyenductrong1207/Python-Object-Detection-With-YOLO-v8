@@ -2,11 +2,15 @@ import sys
 import socket
 import threading
 import json
+import cv2
+import numpy as np
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QTableWidget, QTableWidgetItem, QLineEdit, QComboBox, QSplitter, QMessageBox, QPushButton
+    QLabel, QTableWidget, QTableWidgetItem, QLineEdit, QComboBox, 
+    QSplitter, QMessageBox, QPushButton, QDialog, QFormLayout
 )
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtCore import QBuffer, QByteArray
 
 class ClientApp(QMainWindow):
     def __init__(self):
@@ -244,8 +248,13 @@ class ClientApp(QMainWindow):
     #############################################################################################
     # Function for Editing the Getting Image
     def edit_image(self):
-        
-        return print("Edit")
+        dialog = ResizeImageDialog(self)
+        if dialog.exec_() == QDialog.Accepted:
+            height = int(dialog.height_edit.text())
+            width = int(dialog.width_edit.text())
+            if self.image_label.pixmap() is not None:
+                pixmap = self.image_label.pixmap().scaled(width, height)
+                self.image_label.setPixmap(pixmap)
                  
     #############################################################################################
     # Function for Sending Back the Editting Image
@@ -253,6 +262,28 @@ class ClientApp(QMainWindow):
         
         return print("Send")
             
+#################################################################################################
+
+class ResizeImageDialog(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Resize Image")
+        self.setFixedSize(300, 150)
+
+        resize_layout = QFormLayout(self)
+
+        self.height_label = QLabel("Height:", self)
+        self.height_edit = QLineEdit(self)
+        resize_layout.addRow(self.height_label, self.height_edit)
+
+        self.width_label = QLabel("Width:", self)
+        self.width_edit = QLineEdit(self)
+        resize_layout.addRow(self.width_label, self.width_edit)
+
+        self.ok_button = QPushButton("OK", self)
+        self.ok_button.clicked.connect(self.accept)
+        resize_layout.addWidget(self.ok_button)
+
 #################################################################################################
 if __name__ == "__main__":
     app = QApplication(sys.argv)  
