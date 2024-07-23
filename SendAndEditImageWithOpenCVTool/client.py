@@ -149,6 +149,7 @@ class ClientApp(QMainWindow):
         self.show()  
     
     #############################################################################################
+    
     # Function for continuously listens for incoming connections, receives data from connected clients, 
     # and processes the data to either display it as JSON in a table or as an image
     def start_server(self):
@@ -191,6 +192,7 @@ class ClientApp(QMainWindow):
                 QMessageBox.critical(self, "Error in Server: ", str(e)) 
 
     #############################################################################################
+    
     # Function for Displaying the Getting Data
     def display_data(self, data):
         try:
@@ -232,14 +234,17 @@ class ClientApp(QMainWindow):
             QMessageBox.critical(self, "Error displaying data: ", str(e)) 
 
     #############################################################################################
+    
     # Function for Displaying the Getting Image
     def display_image(self, data):
         try:
-            # Save current image version to stack
+            # Save current image version to stack if an image is already loaded
             if self.image_label.pixmap() is not None:
                 current_image = self.image_label.pixmap().toImage()
                 current_width = self.image_label.pixmap().width()
                 current_height = self.image_label.pixmap().height()
+                
+                # Append current image and its dimensions to the stack
                 self.image_stack.append({
                     'image': current_image,
                     'width': current_width,
@@ -268,6 +273,7 @@ class ClientApp(QMainWindow):
             QMessageBox.critical(self, "Error displaying image: ", str(e)) 
          
     #############################################################################################
+    
     # Function for Editing the Getting Image
     def edit_image(self):
         dialog = ResizeImageDialog(self)
@@ -282,9 +288,11 @@ class ClientApp(QMainWindow):
         if dialog.conver_button.clicked:
             dialog.conver_button.clicked.connect(self.convert_to_grayscale)
             
+        # If the dialog is accepted (OK button clicked)
         if dialog.exec_() == QDialog.Accepted:
             height = int(dialog.height_edit.text())
             width = int(dialog.width_edit.text())
+            
             if height > 0 and width > 0 and self.image_label.pixmap() is not None: 
                 # Save the current image to the stack before editing
                 self.image_stack.append({
@@ -293,11 +301,15 @@ class ClientApp(QMainWindow):
                     'height': current_height
                 })
                 
+                # Scale the image to the new dimensions and display it
                 pixmap = self.image_label.pixmap().scaled(width, height)
                 self.image_label.setPixmap(pixmap)
             else:
                 QMessageBox.warning(self, "Input Error", "Please enter valid height and width to resize Image")
-                
+    
+    #############################################################################################
+    
+    # Function to convert the image to grayscale            
     def convert_to_grayscale(self):
         pixmap = self.image_label.pixmap()
         if pixmap is not None:
@@ -311,30 +323,50 @@ class ClientApp(QMainWindow):
                 'width': current_width,
                 'height': current_height
             })
-                
+            
+            # Convert QPixmap to QImage    
             qimage = pixmap.toImage()
+            # Convert QImage to OpenCV image
             cv_image = self.qimage_to_cvimage(qimage)
+            # Convert the image to grayscale
             gray_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
+            # Get the dimensions of the grayscale image
             height, width = gray_image.shape
+            
+            # Convert the grayscale image back to QImage
             qimage = QImage(gray_image.data, width, height, gray_image.strides[0], QImage.Format.Format_Grayscale8)
+            # Display the grayscale image
             self.image_label.setPixmap(QPixmap.fromImage(qimage))
     
+    #############################################################################################
+    
+    # Function to convert QImage to OpenCV image
     def qimage_to_cvimage(self, qimage):
+        # Convert QImage to RGBA format
         qimage = qimage.convertToFormat(QImage.Format.Format_RGBA8888)
         width = qimage.width()
         height = qimage.height()
+        
+        # Get the image data
         ptr = qimage.bits()
         ptr.setsize(height * width * 4)
+        # Convert the data to a NumPy array
         arr = np.array(ptr).reshape((height, width, 4))
+        # Return the RGB channels of the image
         return arr[:, :, :3]  
-          
+    
+    #############################################################################################
+    
+    # Function to go back to the previous image version      
     def go_back_change(self):
         if self.image_stack:
+            # Get the last image version from the stack
             previous_version = self.image_stack.pop()
             previous_image = previous_version['image']
             previous_width = previous_version['width']
             previous_height = previous_version['height']
             
+            # Scale the previous image to its original dimensions and display it
             pixmap = QPixmap.fromImage(previous_image).scaled(previous_width, previous_height, aspectRatioMode=1)
             self.image_label.setPixmap(pixmap)
         else:
@@ -358,21 +390,24 @@ class ResizeImageDialog(QDialog):
 
         resize_layout = QFormLayout(self)
         
-        # Create send button and add to the buttons layout
+        # Create a convert button and add to the form layout
         self.conver_button = QPushButton("Convert To Grayscale")
         self.conver_button.setFixedHeight(35)  
         resize_layout.addWidget(self.conver_button) 
 
+        # Create a label and text field for height and add to the form layout
         self.height_label = QLabel("Height:", self)
         self.height_edit = QLineEdit(self)
         self.height_edit.setFixedHeight(35)  
         resize_layout.addRow(self.height_label, self.height_edit)
 
+        # Create a label and text field for width and add to the form layout
         self.width_label = QLabel("Width:", self)
         self.width_edit = QLineEdit(self)
         self.width_edit.setFixedHeight(35)  
         resize_layout.addRow(self.width_label, self.width_edit)
 
+        # Create an OK button, connect it to the accept method, and add to the form layout
         self.ok_button = QPushButton("OK", self)
         self.ok_button.setFixedHeight(35)
         self.ok_button.clicked.connect(self.accept)
