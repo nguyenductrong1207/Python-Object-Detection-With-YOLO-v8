@@ -249,40 +249,71 @@ class ClientApp(QMainWindow):
     # Function for Editing the Getting Image
     def edit_image(self):
         dialog = ResizeImageDialog(self)
+        if dialog.conver_button.clicked:
+            dialog.conver_button.clicked.connect(self.convert_to_grayscale)
+            
         if dialog.exec_() == QDialog.Accepted:
             height = int(dialog.height_edit.text())
             width = int(dialog.width_edit.text())
-            if self.image_label.pixmap() is not None:
+            if height > 0 and width > 0 and self.image_label.pixmap() is not None: 
                 pixmap = self.image_label.pixmap().scaled(width, height)
                 self.image_label.setPixmap(pixmap)
+                
+    def convert_to_grayscale(self):
+        pixmap = self.image_label.pixmap()
+        if pixmap is not None:
+            qimage = pixmap.toImage()
+            cv_image = self.qimage_to_cvimage(qimage)
+            gray_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
+            height, width = gray_image.shape
+            qimage = QImage(gray_image.data, width, height, gray_image.strides[0], QImage.Format.Format_Grayscale8)
+            self.image_label.setPixmap(QPixmap.fromImage(qimage))
+    
+    def qimage_to_cvimage(self, qimage):
+        qimage = qimage.convertToFormat(QImage.Format.Format_RGBA8888)
+        width = qimage.width()
+        height = qimage.height()
+        ptr = qimage.bits()
+        ptr.setsize(height * width * 4)
+        arr = np.array(ptr).reshape((height, width, 4))
+        return arr[:, :, :3]  
                  
     #############################################################################################
     # Function for Sending Back the Editting Image
     def send_image(self):
         
         return print("Send")
-            
+    
+  
 #################################################################################################
 
 class ResizeImageDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Resize Image")
-        self.setFixedSize(300, 150)
+        self.setFixedSize(300, 200)
 
         resize_layout = QFormLayout(self)
+        
+        # Create send button and add to the buttons layout
+        self.conver_button = QPushButton("Convert To Grayscale")
+        self.conver_button.setFixedHeight(35)  
+        resize_layout.addWidget(self.conver_button) 
 
         self.height_label = QLabel("Height:", self)
         self.height_edit = QLineEdit(self)
+        self.height_edit.setFixedHeight(35)  
         resize_layout.addRow(self.height_label, self.height_edit)
 
         self.width_label = QLabel("Width:", self)
         self.width_edit = QLineEdit(self)
+        self.width_edit.setFixedHeight(35)  
         resize_layout.addRow(self.width_label, self.width_edit)
 
         self.ok_button = QPushButton("OK", self)
+        self.ok_button.setFixedHeight(35)
         self.ok_button.clicked.connect(self.accept)
-        resize_layout.addWidget(self.ok_button)
+        resize_layout.addWidget(self.ok_button)     
 
 #################################################################################################
 if __name__ == "__main__":
