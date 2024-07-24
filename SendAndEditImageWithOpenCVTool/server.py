@@ -178,6 +178,8 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
         
         self.download_button = QPushButton('Download Image', self)
         self.download_button.clicked.connect(self.download_image)
+        self.download_button.setFixedHeight(35)  
+        self.download_button.setVisible(False)
         right_layout.addWidget(self.download_button)
         
         #########################################################################################
@@ -501,6 +503,8 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
             
             # Store the processed image for later use
             self.processed_image = image
+            
+            self.download_button.setVisible(True)
             
         except Exception as e:
             QMessageBox.critical(self, "Error displaying image", str(e))
