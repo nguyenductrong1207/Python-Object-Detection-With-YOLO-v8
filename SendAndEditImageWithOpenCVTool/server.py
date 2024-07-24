@@ -7,10 +7,14 @@ import threading
 import json
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QLineEdit, QPushButton, QMessageBox, QTableWidget, QTableWidgetItem, QFileDialog, QComboBox, QSplitter
+    QLabel, QLineEdit, QPushButton, QMessageBox, QTableWidget, QTableWidgetItem, 
+    QFileDialog, QComboBox, QSplitter
 )
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtCore import QByteArray
+import base64
+import cv2
+import numpy as np
 
 class SearchAndCountMoneyRepeatTime(QMainWindow):
     def __init__(self):
@@ -171,6 +175,10 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
         # Create label to display the image and add to the right layout
         self.image_label = QLabel("No image selected")  
         right_layout.addWidget(self.image_label)  
+        
+        self.download_button = QPushButton('Download Image', self)
+        self.download_button.clicked.connect(self.download_image)
+        right_layout.addWidget(self.download_button)
         
         #########################################################################################
         # Show the main window
@@ -435,40 +443,84 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
                             image_data += part
                 
                         # Processing the Received Image    
-                        self.display_image(image_data)
+                        self.process_received_data(image_data)
                 
             except Exception as e:
                 QMessageBox.critical(self, "Error in Server", str(e)) 
                 
     #############################################################################################
     
+    def process_received_data(self, data):
+        try:
+            # Decode the data to a JSON string
+            json_data = data.decode('utf-8')
+            payload = json.loads(json_data)
+            
+            # Decode base64-encoded image data
+            image_data = base64.b64decode(payload['image'])
+            
+            # Process the image data
+            self.display_image(image_data, payload.get('texts', []))
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Error processing data", str(e))
+    
     # Function to Display the Received Image  
-    def display_image(self, image_data):
-        # Convert the byte data to a QPixmap
-        image = QImage.fromData(image_data)
-        if not image.isNull():
-            pixmap = QPixmap.fromImage(image)
-            self.image_label.setPixmap(pixmap)
-            self.image_label.setText("") 
+    def display_image(self, image_data, texts):
+        try:
+            # Load the image from bytes
+            np_arr = np.frombuffer(image_data, np.uint8)
+            image = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+            
+            # Draw the text on the image
+            for text_info in texts:
+                text = text_info['text']
+                x = text_info['x']
+                y = text_info['y']
+                font_scale = 1
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                color = (255, 0, 0)  # Red color
+                thickness = 2
+                cv2.putText(image, text, (x, y), font, font_scale, color, thickness, cv2.LINE_AA)
+            
+            # Convert the OpenCV image (BGR) to RGB
+            image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            
+            # Convert the image to QImage
+            height, width, channel = image_rgb.shape
+            bytes_per_line = 3 * width
+            q_image = QImage(image_rgb.data, width, height, bytes_per_line, QImage.Format_RGB888)
+            pixmap = QPixmap.fromImage(q_image)
+            
+            # Display the image
+            if not pixmap.isNull():
+                self.image_label.setPixmap(pixmap)
+                self.image_label.setText("")  # Clear any previous text
+            else:
+                QMessageBox.critical(self, "Error", "Failed to load image.")
+            
+            # Store the processed image for later use
+            self.processed_image = image
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Error displaying image", str(e))
+    
+    def download_image(self):
+        if hasattr(self, 'processed_image') and self.processed_image is not None:
+            # Open file dialog to choose the save location
+            options = QFileDialog.Options()
+            file_name, _ = QFileDialog.getSaveFileName(self, "Save Image", "", "PNG Files (*.png);;All Files (*)", options=options)
+            
+            if file_name:
+                try:
+                    # Save the processed image to the chosen file
+                    cv2.imwrite(file_name, self.processed_image)
+                    QMessageBox.information(self, "Success", "Image saved successfully!")
+                except Exception as e:
+                    QMessageBox.critical(self, "Error", f"Failed to save image: {str(e)}")
         else:
-            QMessageBox.critical(self, "Error", "Failed to load image.")
-        
-    #############################################################################################
-    # Function to 
-    def closeEvent(self, event):
-        self.stop_watching()  # Stop watching files
-        self.stop_server()  # Ensure the server thread finishes
-        event.accept()  # Accept the close event
-        
-    def stop_server(self):
-        # This method will ensure the server socket is properly closed
-        self.server_running = False
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect(('127.0.0.1', 12345))  # Connect to the server to unblock the accept call
-            s.close()
-        self.server_thread.join()  # Ensure the server thread finishes
- 
-
+            QMessageBox.warning(self, "No Image", "No image available to save.")
+             
 #################################################################################################
 if __name__ == "__main__":
     app = QApplication(sys.argv) 

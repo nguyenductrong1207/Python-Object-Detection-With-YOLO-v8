@@ -10,8 +10,9 @@ from PyQt5.QtWidgets import (
     QLabel, QTableWidget, QTableWidgetItem, QLineEdit, QComboBox, 
     QSplitter, QMessageBox, QPushButton, QDialog, QFormLayout
 )
-from PyQt5.QtGui import QPixmap, QImage
-from PyQt5.QtCore import QBuffer, QByteArray
+from PyQt5.QtGui import QPixmap, QImage, QDrag, QPainter, QPen, QFont
+from PyQt5.QtCore import QBuffer, QByteArray, Qt, QMimeData
+import base64
 
 class ClientApp(QMainWindow):
     def __init__(self):
@@ -277,7 +278,7 @@ class ClientApp(QMainWindow):
     
     # Function for Editing the Getting Image
     def edit_image(self):
-        dialog = ResizeImageDialog(self)
+        dialog = EditImageDialog(self)
         
         current_image = self.image_label.pixmap().toImage()
         current_width = self.image_label.pixmap().width()
@@ -286,13 +287,14 @@ class ClientApp(QMainWindow):
         dialog.height_edit.setText(str(current_height))
         dialog.width_edit.setText(str(current_width))
         
-        if dialog.conver_button.clicked:
-            dialog.conver_button.clicked.connect(self.convert_to_grayscale)
+        if dialog.convert_button.clicked:
+            dialog.convert_button.clicked.connect(self.convert_to_grayscale)
             
         # If the dialog is accepted (OK button clicked)
         if dialog.exec_() == QDialog.Accepted:
             height = int(dialog.height_edit.text())
             width = int(dialog.width_edit.text())
+            text = dialog.text_edit.text()
             
             if height > 0 and width > 0 and self.image_label.pixmap() is not None: 
                 # Save the current image to the stack before editing
@@ -305,6 +307,13 @@ class ClientApp(QMainWindow):
                 # Scale the image to the new dimensions and display it
                 pixmap = self.image_label.pixmap().scaled(width, height)
                 self.image_label.setPixmap(pixmap)
+                
+                if text:
+                    draggable_label = DraggableLabel(text, self.image_label)
+                    draggable_label.move(50, 50)  # Initial position
+                    draggable_label.show()
+                    self.draggable_label = draggable_label  # Save reference to draggable
+                
             else:
                 QMessageBox.warning(self, "Input Error", "Please enter valid height and width to resize Image")
     
@@ -356,6 +365,38 @@ class ClientApp(QMainWindow):
         # Return the RGB channels of the image
         return arr[:, :, :3]  
     
+    def add_text_to_image(self, text):
+        if self.image_label.pixmap() is not None and text:
+            pixmap = self.image_label.pixmap()
+            image = pixmap.toImage()
+            
+            # Convert QImage to QPixmap
+            painter = QPainter(pixmap)
+            painter.setPen(QPen(Qt.red))
+            painter.setFont(QFont("Arial", 20))
+            
+            # Place text at a fixed position (can be enhanced to allow drag and drop)
+            painter.drawText(50, 50, text)
+            painter.end()
+            
+            self.image_label.setPixmap(pixmap)
+    
+    # Method to update the image with text
+    def update_image_with_text(self, text, pos):
+        if self.image_label.pixmap() is not None:
+            pixmap = self.image_label.pixmap()
+            image = pixmap.toImage()
+
+            # Convert QImage to QPixmap for QPainter
+            painter = QPainter()
+            painter.begin(image)
+            painter.setPen(QPen(Qt.red))  # Set text color
+            painter.setFont(QFont('Arial', 20))  # Set text font and size
+            painter.drawText(pos, text)  # Draw text at the specified position
+            painter.end()
+
+            self.image_label.setPixmap(QPixmap.fromImage(image))
+        
     #############################################################################################
     
     # Function to go back to the previous image version      
@@ -387,6 +428,27 @@ class ClientApp(QMainWindow):
             qimage.save(buffer, "PNG")
             byte_array = buffer.data()
             
+            # Encode byte array in base64 to handle binary data in JSON
+            encoded_image = base64.b64encode(byte_array).decode('utf-8')
+
+            # Gather all text items from draggable labels
+            text_data = []
+            for widget in self.image_label.findChildren(DraggableLabel):
+                text_data.append({
+                    'text': widget.text(),
+                    'x': widget.x(),
+                    'y': widget.y()
+                })
+
+            # Create a JSON object with image and text data
+            payload = {
+                'image': encoded_image,
+                'texts': text_data
+            }
+
+            # Serialize the JSON object
+            json_payload = json.dumps(payload).encode('utf-8')
+            
             # Send the byte array to the server
             try:
                 # Replace with the server's IP address and port
@@ -398,7 +460,7 @@ class ClientApp(QMainWindow):
                 # Connect to the server
                 client_socket.connect((server_ip, server_port))
                 # Send the image data
-                client_socket.sendall(byte_array)
+                client_socket.sendall(json_payload)
                 # Close the socket
                 client_socket.close()
                 
@@ -410,37 +472,88 @@ class ClientApp(QMainWindow):
     
 #################################################################################################
 
-class ResizeImageDialog(QDialog):
+class EditImageDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Resize Image")
-        self.setFixedSize(300, 200)
+        self.setWindowTitle("Edit Image")
+        self.setFixedSize(600, 300)
 
-        resize_layout = QFormLayout(self)
+        main_layout = QHBoxLayout(self) 
         
-        # Create a convert button and add to the form layout
-        self.conver_button = QPushButton("Convert To Grayscale")
-        self.conver_button.setFixedHeight(35)  
-        resize_layout.addWidget(self.conver_button) 
+        left_widget = QWidget()
+        left_widget.setFixedWidth(300)
+        left_layout = QVBoxLayout(left_widget)
 
         # Create a label and text field for height and add to the form layout
+        height_layout = QHBoxLayout()  
         self.height_label = QLabel("Height:", self)
         self.height_edit = QLineEdit(self)
-        self.height_edit.setFixedHeight(35)  
-        resize_layout.addRow(self.height_label, self.height_edit)
+        self.height_edit.setFixedHeight(35)
+        height_layout.addWidget(self.height_label)
+        height_layout.addWidget(self.height_edit)
+        left_layout.addLayout(height_layout)
 
         # Create a label and text field for width and add to the form layout
+        width_layout = QHBoxLayout() 
         self.width_label = QLabel("Width:", self)
         self.width_edit = QLineEdit(self)
-        self.width_edit.setFixedHeight(35)  
-        resize_layout.addRow(self.width_label, self.width_edit)
+        self.width_edit.setFixedHeight(35)
+        width_layout.addWidget(self.width_label)
+        width_layout.addWidget(self.width_edit)
+        left_layout.addLayout(width_layout)
+        
+        # Create a convert button and add to the form layout
+        self.convert_button = QPushButton("Convert To Grayscale")
+        self.convert_button.setFixedHeight(35)
+        left_layout.addWidget(self.convert_button)
 
         # Create an OK button, connect it to the accept method, and add to the form layout
         self.ok_button = QPushButton("OK", self)
         self.ok_button.setFixedHeight(35)
         self.ok_button.clicked.connect(self.accept)
-        resize_layout.addWidget(self.ok_button)     
+        left_layout.addWidget(self.ok_button)
 
+        main_layout.addWidget(left_widget)
+        
+        ####
+        # Right side (new UI for text option)
+        right_widget = QWidget()
+        right_widget.setFixedWidth(300)
+        right_layout = QVBoxLayout(right_widget)
+
+        self.text_option_label = QLabel("Text Option:", self)
+        self.text_edit = QLineEdit(self)
+        self.text_edit.setFixedHeight(35)
+
+        right_layout.addWidget(self.text_option_label)
+        right_layout.addWidget(self.text_edit)
+
+        main_layout.addWidget(right_widget)
+
+        self.setLayout(main_layout)
+
+class DraggableLabel(QLabel):
+    def __init__(self, text, parent=None):
+        super().__init__(text, parent)
+        self.setFont(QFont('Arial', 20))
+        self.setStyleSheet("color: red;")  
+        self.setFixedSize(self.sizeHint())  # Size to fit the text
+        self.setAttribute(Qt.WA_TransparentForMouseEvents, False)
+        self.setCursor(Qt.OpenHandCursor)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.setCursor(Qt.ClosedHandCursor)
+            self.offset = event.pos()
+
+    def mouseMoveEvent(self, event):
+        if event.buttons() == Qt.LeftButton:
+            self.move(self.mapToParent(event.pos() - self.offset))
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.setCursor(Qt.OpenHandCursor)
+            
 #################################################################################################
 if __name__ == "__main__":
     app = QApplication(sys.argv)  
