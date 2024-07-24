@@ -1,4 +1,5 @@
 import sys
+import io
 import socket
 import threading
 import json
@@ -150,7 +151,7 @@ class ClientApp(QMainWindow):
     
     #############################################################################################
     
-    # Function for continuously listens for incoming connections, receives data from connected clients, 
+    # Function for continuously listens for incoming connections, receives data from connected server, 
     # and processes the data to either display it as JSON in a table or as an image
     def start_server(self):
         # Replace with the server's IP address
@@ -376,10 +377,37 @@ class ClientApp(QMainWindow):
     #############################################################################################
     # Function for Sending Back the Editting Image
     def send_image(self):
-        
-        return print("Send")
+        if self.image_label.pixmap() is not None:
+            # Convert the QPixmap to QImage
+            qimage = self.image_label.pixmap().toImage()
+            
+            # Convert the QImage to byte array
+            buffer = QBuffer()
+            buffer.open(QBuffer.ReadWrite)
+            qimage.save(buffer, "PNG")
+            byte_array = buffer.data()
+            
+            # Send the byte array to the server
+            try:
+                # Replace with the server's IP address and port
+                server_ip = '127.0.0.1'
+                server_port = 54321
+                
+                # Create a TCP/IP socket
+                client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                # Connect to the server
+                client_socket.connect((server_ip, server_port))
+                # Send the image data
+                client_socket.sendall(byte_array)
+                # Close the socket
+                client_socket.close()
+                
+                QMessageBox.information(self, "Success", "Image sent back to server successfully!")
+            except Exception as e:
+                QMessageBox.critical(self, "Error sending image: ", str(e))
+        else:
+            QMessageBox.warning(self, "No Image", "No image to send back.")
     
-  
 #################################################################################################
 
 class ResizeImageDialog(QDialog):

@@ -3,19 +3,24 @@ import pandas as pd
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import socket
+import threading
 import json
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QLineEdit, QPushButton, QMessageBox, QTableWidget, QTableWidgetItem, QFileDialog, QComboBox, QSplitter
 )
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtCore import QByteArray
 
 class SearchAndCountMoneyRepeatTime(QMainWindow):
     def __init__(self):
         super().__init__()
         self.init_ui()
         self.observer = Observer()  # Initialize the file observer
-
+        # Start the server in a separate thread
+        self.server_thread = threading.Thread(target=self.start_server, daemon=True)  
+        self.server_thread.start()
+        
     def init_ui(self):
         self.setWindowTitle("Search And Count Money Repeat Time")  
         self.setFixedSize(1400, 600) 
@@ -172,6 +177,7 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
         self.show()  
 
     #############################################################################################
+    
     # Function for Choosing an excel file
     def browse_file(self):
         # Create a file dialog
@@ -185,6 +191,7 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
             self.load_sheets(file_path)  
 
     #############################################################################################
+    
     # Function for Loading the excel file 
     def load_sheets(self, file_path):
         try:
@@ -196,6 +203,7 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
             QMessageBox.critical(self, "Error", str(e))  
 
     #############################################################################################
+    
     # Function for button Clear
     def clear_results(self):
         reply = QMessageBox.question(self, 'Confirm Clear', 'Are you sure you want to clear the results?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
@@ -207,6 +215,7 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
             self.money_edit.clear()  
 
     #############################################################################################
+    
     # Function for button Search
     def search_money(self):
         money_amount = self.money_edit.text().strip()  # Get the money amount
@@ -256,6 +265,7 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
         self.result_table.setCellWidget(row_position, 4, action_widget)  
 
     #############################################################################################
+    
     # Function for Sending a specific row's data in the table
     def send_single_data(self, money, count, total, sheet_name):
         try:
@@ -278,6 +288,7 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
             QMessageBox.critical(self, "Error", str(e)) 
 
     #############################################################################################
+    
     # Function for Sending all data in table
     def send_all_data(self):
         try:
@@ -312,6 +323,7 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
             QMessageBox.critical(self, "Error", str(e)) 
 
     #############################################################################################
+    
     #Function for Deleting row in table
     def confirm_delete_row(self, row):
         reply = QMessageBox.question(self, 'Confirm Delete', 'Are you sure you want to delete this row?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
@@ -320,6 +332,7 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
             self.result_table.removeRow(row)  
 
     #############################################################################################
+    
     # Function for Choosing an Image
     def choose_image(self):
         options = QFileDialog.Options()  
@@ -337,6 +350,7 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
             self.image_label.setText("")  
 
     #############################################################################################
+    
     # Function for Sending the current Image
     def send_image(self):
         try:
@@ -364,6 +378,7 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
             QMessageBox.critical(self, "Error", str(e)) 
 
     #############################################################################################
+    
     # This method is a callback that gets called whenever the file being watched is modified
     def on_modified(self, event):
         # Check if the modified file is the current file
@@ -372,6 +387,7 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
             self.load_sheets(self.file_edit.text())  
 
     #############################################################################################
+    
     # Function for starts watching a specified file for modifications
     def start_watching(self, file_path):
         # Create a file system event handler
@@ -383,11 +399,75 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
         self.observer.start()  
 
     #############################################################################################
+    
     # Function for stops watching the file for modifications
     def stop_watching(self):
         self.observer.stop()  
         # Wait for the observer to finish
         self.observer.join()  
+        
+    #############################################################################################
+    
+    # Function for continuously listens for incoming connections, receives data from connected client 
+    def start_server(self):
+        # Replace with the server's IP address
+        server_ip = '127.0.0.1'  
+        server_port = 54321  
+        
+        while True:
+            try:
+                # Create a TCP/IP socket
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
+                    # Bind the socket to the address and port
+                    server_socket.bind((server_ip, server_port))  
+                    # Listen for incoming connections
+                    server_socket.listen(1)  
+
+                    # Accept a new connection
+                    client_socket, _ = server_socket.accept()  
+                    with client_socket:
+                        image_data = b''
+                        while True:
+                            # Receive data in chunks
+                            part = client_socket.recv(4096)  
+                            if not part:
+                                break
+                            image_data += part
+                
+                        # Processing the Received Image    
+                        self.display_image(image_data)
+                
+            except Exception as e:
+                QMessageBox.critical(self, "Error in Server", str(e)) 
+                
+    #############################################################################################
+    
+    # Function to Display the Received Image  
+    def display_image(self, image_data):
+        # Convert the byte data to a QPixmap
+        image = QImage.fromData(image_data)
+        if not image.isNull():
+            pixmap = QPixmap.fromImage(image)
+            self.image_label.setPixmap(pixmap)
+            self.image_label.setText("") 
+        else:
+            QMessageBox.critical(self, "Error", "Failed to load image.")
+        
+    #############################################################################################
+    # Function to 
+    def closeEvent(self, event):
+        self.stop_watching()  # Stop watching files
+        self.stop_server()  # Ensure the server thread finishes
+        event.accept()  # Accept the close event
+        
+    def stop_server(self):
+        # This method will ensure the server socket is properly closed
+        self.server_running = False
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect(('127.0.0.1', 12345))  # Connect to the server to unblock the accept call
+            s.close()
+        self.server_thread.join()  # Ensure the server thread finishes
+ 
 
 #################################################################################################
 if __name__ == "__main__":
