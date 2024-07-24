@@ -8,7 +8,7 @@ import numpy as np
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QTableWidget, QTableWidgetItem, QLineEdit, QComboBox, 
-    QSplitter, QMessageBox, QPushButton, QDialog, QFormLayout
+    QSplitter, QMessageBox, QPushButton, QDialog, QFormLayout, QFileDialog
 )
 from PyQt5.QtGui import QPixmap, QImage, QDrag, QPainter, QPen, QFont
 from PyQt5.QtCore import QBuffer, QByteArray, Qt, QMimeData
@@ -124,6 +124,13 @@ class ClientApp(QMainWindow):
         self.go_back_button.setFixedHeight(35)  
         self.go_back_button.setVisible(False)
         buttons_layout.addWidget(self.go_back_button) 
+        
+        # Create downkoad button and add to the buttons layout
+        self.download_button = QPushButton("Download")
+        self.download_button.clicked.connect(self.download_image)  
+        self.download_button.setFixedHeight(35)  
+        self.download_button.setVisible(False)
+        buttons_layout.addWidget(self.download_button) 
          
         # Create send button and add to the buttons layout
         self.send_button = QPushButton("Send")
@@ -270,6 +277,7 @@ class ClientApp(QMainWindow):
             self.edit_button.setVisible(True)
             self.send_button.setVisible(True)
             self.go_back_button.setVisible(True)
+            self.download_button.setVisible(True)    
             
         except Exception as e:
             QMessageBox.critical(self, "Error displaying image: ", str(e)) 
@@ -374,12 +382,16 @@ class ClientApp(QMainWindow):
             painter = QPainter(pixmap)
             painter.setPen(QPen(Qt.red))
             painter.setFont(QFont("Arial", 20))
-            
-            # Place text at a fixed position (can be enhanced to allow drag and drop)
-            painter.drawText(50, 50, text)
+            painter.drawText(image.rect(), Qt.AlignCenter, text)
             painter.end()
             
-            self.image_label.setPixmap(pixmap)
+            # Place text at a fixed position (can be enhanced to allow drag and drop)
+            # painter.drawText(50, 50, text)
+            # painter.end()
+            
+            # self.image_label.setPixmap(pixmap)
+            self.image_label.setPixmap(QPixmap.fromImage(image))
+            self.image_label.setAlignment(Qt.AlignCenter)
     
     # Method to update the image with text
     def update_image_with_text(self, text, pos):
@@ -414,7 +426,29 @@ class ClientApp(QMainWindow):
         else:
             QMessageBox.warning(self, "No Previous Image", "No previous image to go back")
 
-
+    def download_image(self):
+        if self.image_label.pixmap() is not None:
+            options = QFileDialog.Options()
+            file_path, _ = QFileDialog.getSaveFileName(self, "Save Image", "", "PNG Files (*.png);;All Files (*)", options=options)
+            
+            if file_path:
+                try:
+                    qimage = self.image_label.pixmap().toImage()
+                    painter = QPainter(qimage)
+                    
+                    for child in self.image_label.children():
+                        if isinstance(child, DraggableLabel):
+                            pos = child.pos()
+                            painter.drawText(pos, child.text())
+                    
+                    painter.end()
+                    qimage.save(file_path, "PNG")
+                    QMessageBox.information(self, "Success", "Image downloaded successfully!")
+                except Exception as e:
+                    QMessageBox.critical(self, "Error", f"Failed to download image: {str(e)}")
+        else:
+            QMessageBox.warning(self, "No Image", "No image to download.")
+    
     #############################################################################################
     # Function for Sending Back the Editting Image
     def send_image(self):
