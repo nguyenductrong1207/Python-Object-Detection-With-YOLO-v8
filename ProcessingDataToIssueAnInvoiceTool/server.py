@@ -118,7 +118,7 @@ class FindDataToIssueAnInvoice(QMainWindow):
 
             # Select the dataframe for the chosen sheet and subset rows 14 to 215
             df = self.df_dict[sheet_name]
-            df = df.iloc[12:214]
+            df = df.iloc[13:214]
 
             # Column index for money data
             money_column_index = 5
@@ -136,9 +136,14 @@ class FindDataToIssueAnInvoice(QMainWindow):
 
             # Sort by Money in ascending order
             result = result.sort_values(by='Money')
+            
+            # Add a 'Total' column
             result['Total'] = result['Money'] * result['Time Repeated']
+            
+            # Clear the table before adding new rows
+            self.result_table.setRowCount(0)
 
-            # Display the sorted results in the table
+            # Display the sorted results in the table 
             self.result_table.setRowCount(len(result))
             for row_idx, row_data in result.iterrows():
                 self.result_table.setItem(row_idx, 0, QTableWidgetItem(str(row_data['Money'])))
