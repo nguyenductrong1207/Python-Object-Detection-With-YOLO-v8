@@ -172,16 +172,16 @@ class FindDataToIssueAnInvoice(QMainWindow):
                 QMessageBox.warning(self, "Warning", "Please select a sheet name.")
                 return                  
             
-            # Convert user input to zero-based indices
+            # Convert user input to zero-based indices 
             money_column_index = int(self.column_edit.text()) - 1
             row_start_index = int(self.row_start_edit.text()) - 2
             row_end_index = int(self.row_end_edit.text()) - 1
             
-            # Subset the DataFrame to the specified rows
+            # Subset the DataFrame to the specified rows 
             df = self.df_dict[sheet_name]
             df = df.iloc[row_start_index:row_end_index]
 
-            # Extract the money column and drop NaN values
+            # Extract the money column and drop NaN values 
             if len(df.columns) <= money_column_index:
                 QMessageBox.critical(self, "Error", f"Sheet {sheet_name} does not have enough columns.")
                 return
