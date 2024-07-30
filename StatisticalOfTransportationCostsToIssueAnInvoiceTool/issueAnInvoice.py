@@ -13,7 +13,7 @@ class IssueAnInvoice(QMainWindow):
         self.init_ui()
 
     def init_ui(self):
-        self.setWindowTitle("Statistical analysis of data from the transportation summary sheet for invoice generation")
+        self.setWindowTitle("Issue An Invoice")
         self.setFixedSize(1000, 700)
 
         central_widget = QWidget()
@@ -46,18 +46,6 @@ class IssueAnInvoice(QMainWindow):
         file_layout.addWidget(self.browse_button)
         
         left_layout.addLayout(file_layout)
-
-        # Layout for sheet name selection
-        sheet_and_money_layout = QHBoxLayout()
-        self.sheet_label = QLabel("Sheet name:")
-        self.sheet_combo = QComboBox()
-
-        self.sheet_combo.setFixedWidth(240)
-        self.sheet_combo.setFixedHeight(35)
-
-        sheet_and_money_layout.addWidget(self.sheet_label)
-        sheet_and_money_layout.addWidget(self.sheet_combo)
-        left_layout.addLayout(sheet_and_money_layout)
         
         # Layout for choosing which are begin column and rows to start searching
         self.separate_label = QLabel("    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -")
@@ -67,24 +55,28 @@ class IssueAnInvoice(QMainWindow):
         
         input_layout = QHBoxLayout()
         
-        column_layout = QVBoxLayout()
-        self.column_label = QLabel("Column Index")        
-        self.column_edit = QLineEdit()
-        self.column_edit.setFixedHeight(30)
-        self.column_edit.setFixedWidth(200)
+        # 
+        sheet_layout = QVBoxLayout()
+        self.sheet_label = QLabel("Sheet name:")
+        self.sheet_combo = QComboBox()
+        self.sheet_combo.setFixedHeight(30)
+        self.sheet_combo.setFixedWidth(200)
+
+        sheet_layout.addWidget(self.sheet_label)
+        sheet_layout.addWidget(self.sheet_combo)
         
-        column_layout.addWidget(self.column_label)
-        column_layout.addWidget(self.column_edit) 
-        
+        #
         row_start_layout = QVBoxLayout()
         self.row_start_label = QLabel("Row Start")        
         self.row_start_edit = QLineEdit()
+        self.row_start_edit.setText("14")
         self.row_start_edit.setFixedHeight(30)
         self.row_start_edit.setFixedWidth(200)
         
         row_start_layout.addWidget(self.row_start_label)
         row_start_layout.addWidget(self.row_start_edit) 
         
+        #
         row_end_layout = QVBoxLayout()
         self.row_end_label = QLabel("Row End")        
         self.row_end_edit = QLineEdit()
@@ -94,7 +86,7 @@ class IssueAnInvoice(QMainWindow):
         row_end_layout.addWidget(self.row_end_label)
         row_end_layout.addWidget(self.row_end_edit) 
         
-        input_layout.addLayout(column_layout)
+        input_layout.addLayout(sheet_layout)
         input_layout.addLayout(row_start_layout)
         input_layout.addLayout(row_end_layout)
         
@@ -122,7 +114,7 @@ class IssueAnInvoice(QMainWindow):
         
         left_layout.addLayout(buttons_layout)
         
-        # Layout for choosing which are begin column and rows to start searching
+        # Totol money in table
         self.total_label = QLabel("")
         self.total_label.setVisible(False)
         left_layout.addWidget(self.total_label)
@@ -131,7 +123,7 @@ class IssueAnInvoice(QMainWindow):
         self.result_table = QTableWidget()
         self.result_table.setColumnCount(3)
         self.result_table.setFixedWidth(700)
-        self.result_table.setHorizontalHeaderLabels(["Time Repeated", "Money", "Total"])
+        self.result_table.setHorizontalHeaderLabels(["Số Lượng", "Đơn Giá", "Thành Tiền"])
         self.result_table.setSortingEnabled(True)  # Enable sorting
         self.result_table.horizontalHeader().sectionClicked.connect(self.on_header_clicked)  # Connect header click
 
@@ -173,7 +165,7 @@ class IssueAnInvoice(QMainWindow):
                 return                  
             
             # Convert user input to zero-based indices 
-            money_column_index = int(self.column_edit.text()) - 1
+            money_column_index = 5
             row_start_index = int(self.row_start_edit.text()) - 2
             row_end_index = int(self.row_end_edit.text()) - 1
             
@@ -191,13 +183,13 @@ class IssueAnInvoice(QMainWindow):
 
             # Count occurrences of each money amount
             result = money_column.value_counts().reset_index()
-            result.columns = ['Money', 'Time Repeated']
+            result.columns = ['Đơn Giá', 'Số Lượng']
 
             # Sort by Money in ascending order
-            result = result.sort_values(by='Money')
+            result = result.sort_values(by='Đơn Giá')
 
             # Add a 'Total' column
-            result['Total'] = result['Money'] * result['Time Repeated']
+            result['Thành Tiền'] = result['Đơn Giá'] * result['Số Lượng']
 
             # Clear the table before adding new rows
             self.result_table.setRowCount(0)
@@ -205,12 +197,12 @@ class IssueAnInvoice(QMainWindow):
             # Display the sorted results in the table 
             self.result_table.setRowCount(len(result))
             for row_idx, row_data in result.iterrows():
-                self.result_table.setItem(row_idx, 0, QTableWidgetItem(str(row_data['Time Repeated'])))
-                self.result_table.setItem(row_idx, 1, QTableWidgetItem(str(row_data['Money'])))
-                self.result_table.setItem(row_idx, 2, QTableWidgetItem(str(row_data['Total'])))
+                self.result_table.setItem(row_idx, 0, QTableWidgetItem(str(row_data['Số Lượng'])))
+                self.result_table.setItem(row_idx, 1, QTableWidgetItem(str(row_data['Đơn Giá'])))
+                self.result_table.setItem(row_idx, 2, QTableWidgetItem(str(row_data['Thành Tiền'])))
                 
             # Calculate the sum of the 'Total' column
-            self.total_label.setText(f"    Sum of Total Amount: {result['Total'].sum()}")
+            self.total_label.setText(f"    Total Cost: {result['Thành Tiền'].sum()}")
             self.total_label.setVisible(True)
 
         except Exception as e:
@@ -239,7 +231,7 @@ class IssueAnInvoice(QMainWindow):
                 data.append(row_data)
 
             # Convert the list to a DataFrame
-            df = pd.DataFrame(data, columns=["Time Repeated", "Money", "Total"])
+            df = pd.DataFrame(data, columns=["Số Lượng", "Đơn Giá", "Thành Tiền"])
 
             # Prompt the user to select a save location and filename
             file_dialog = QFileDialog()

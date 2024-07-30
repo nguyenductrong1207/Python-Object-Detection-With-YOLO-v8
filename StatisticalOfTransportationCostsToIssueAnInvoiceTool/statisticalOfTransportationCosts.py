@@ -11,9 +11,11 @@ class StatisticalOfTransportationCosts(QMainWindow):
         super().__init__()
         self.df_dict = {}  # Dictionary to store dataframes for each sheet
         self.init_ui()
+        self.total_cost = 0
+        self.total_weight = 0
 
     def init_ui(self):
-        self.setWindowTitle("Statistical analysis of transportation costs for creating a summary sheet")
+        self.setWindowTitle("Statistical Of Transportation Costs")
         self.setFixedSize(1000, 700)
 
         central_widget = QWidget()
@@ -55,7 +57,7 @@ class StatisticalOfTransportationCosts(QMainWindow):
         
         input_layout = QHBoxLayout()
         
-        # Layout for sheet name selection
+        # 
         sheet_layout = QVBoxLayout()
         self.sheet_label = QLabel("Sheet name:")
         self.sheet_combo = QComboBox()
@@ -69,6 +71,7 @@ class StatisticalOfTransportationCosts(QMainWindow):
         row_start_layout = QVBoxLayout()
         self.row_start_label = QLabel("Row Start")        
         self.row_start_edit = QLineEdit()
+        self.row_start_edit.setText("8")
         self.row_start_edit.setFixedHeight(30)
         self.row_start_edit.setFixedWidth(200)
         
@@ -114,18 +117,23 @@ class StatisticalOfTransportationCosts(QMainWindow):
         
         left_layout.addLayout(buttons_layout)
         
-        # Layout for choosing which are begin column and rows to start searching
-        self.total_label = QLabel("")
-        self.total_label.setVisible(False)
-        left_layout.addWidget(self.total_label)
+        # Totol money in table
+        self.total_cost_label = QLabel("")
+        self.total_cost_label.setVisible(False)
+        left_layout.addWidget(self.total_cost_label)
+        
+        # Totol weight in table
+        self.total_weight_label = QLabel("")
+        self.total_weight_label.setVisible(False)
+        left_layout.addWidget(self.total_weight_label)
 
         # Table to display results
         self.result_table = QTableWidget()
         self.result_table.setColumnCount(4)
         self.result_table.setFixedWidth(700)
         self.result_table.setHorizontalHeaderLabels(["Ngày Xuất", "Điểm Giao Hàng", "Trọng Lượng", "Giá Vận Chuyển"])
-        self.result_table.setSortingEnabled(True)  # Enable sorting
-        self.result_table.horizontalHeader().sectionClicked.connect(self.on_header_clicked)  # Connect header click
+        # self.result_table.setSortingEnabled(True)  # Enable sorting
+        # self.result_table.horizontalHeader().sectionClicked.connect(self.on_header_clicked)  # Connect header click
 
         left_layout.addWidget(self.result_table)
 
@@ -138,6 +146,11 @@ class StatisticalOfTransportationCosts(QMainWindow):
         if file_path:
             self.file_edit.setText(file_path)
             self.load_sheets(file_path)
+            self.result_table.setRowCount(0)
+            self.total_cost_label.setVisible(False)
+            self.total_cost = 0
+            self.total_weight = 0
+            
 
     # Load all sheets from the selected Excel file into df_dict
     def load_sheets(self, file_path):
@@ -153,16 +166,74 @@ class StatisticalOfTransportationCosts(QMainWindow):
         reply = QMessageBox.question(self, 'Confirm Clear', 'Are you sure you want to clear the results?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
             self.result_table.setRowCount(0)
-            # self.file_edit.clear()
-            # self.sheet_combo.clear()
+            self.total_cost_label.setVisible(False)
+            self.total_cost = 0
+            self.total_weight = 0
 
     # Search and show all data from all sheets and display all 
     def search_money(self):
-        print("")
+        try:
+            sheet_name = self.sheet_combo.currentText()
+            row_start = int(self.row_start_edit.text())
+            row_end = int(self.row_end_edit.text())
+
+            if not sheet_name:
+                QMessageBox.warning(self, "Warning", "Please select a sheet name.")
+                return
+            
+            df = self.df_dict[sheet_name]
+
+            date_column = df.iloc[row_start - 2 : row_end - 1, 1]  # Column B 
+            location_column = df.iloc[row_start - 2 : row_end - 1, 5]  # Column F 
+
+            # Ensure correct columns are referenced and handle NaN values
+            weight_column_g = pd.to_numeric(df.iloc[row_start - 2 : row_end - 1, 6].fillna(0), errors='coerce')  # Column G (index 6)
+            weight_column_i = pd.to_numeric(df.iloc[row_start - 2 : row_end - 1, 8].fillna(0), errors='coerce')  # Column I (index 8)
+            weight_column = weight_column_g + weight_column_i  # Sum of Columns G and I
+
+            cost_column = df.iloc[row_start - 2 : row_end - 1, 16]  # Column Q 
+
+            # Keep track of the starting row index
+            start_row = self.result_table.rowCount()
+
+            for i in range(len(date_column)):
+                date = date_column.iloc[i]
+                location = location_column.iloc[i]
+                weight = weight_column.iloc[i]
+                cost = cost_column.iloc[i]
+                
+                # Convert values to strings, but keep them empty if NaN
+                date_str = str(date) if pd.notna(date) else ""
+                location_str = str(location) if pd.notna(location) else ""
+                weight_str = str(weight) if pd.notna(weight) else ""
+                cost_str = str(cost) if pd.notna(cost) else ""
+                
+                self.result_table.insertRow(start_row + i)
+                self.result_table.setItem(start_row + i, 0, QTableWidgetItem(date_str))
+                self.result_table.setItem(start_row + i, 1, QTableWidgetItem(location_str))
+                self.result_table.setItem(start_row + i, 2, QTableWidgetItem(weight_str))
+                self.result_table.setItem(start_row + i, 3, QTableWidgetItem(cost_str))
+                
+                # Calculate total cost only if cost is a valid number
+                if cost_str and cost_str.replace('.', '', 1).isdigit():
+                    self.total_cost += int(cost_str)
+                    
+                # Calculate total weight only if cost is a valid number
+                if weight_str and weight_str.replace('.', '', 1).isdigit():
+                    self.total_weight += int(weight_str)
+                    
+            self.total_cost_label.setText(f"Total Cost: {self.total_cost}")
+            self.total_cost_label.setVisible(True)
+            
+            self.total_weight_label.setText(f"Total Weight: {self.total_weight}")
+            self.total_weight_label.setVisible(True)
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Error", str(e))
 
     # Slot for handling header click and sorting
-    def on_header_clicked(self, logicalIndex):
-        self.result_table.sortItems(logicalIndex, Qt.AscendingOrder)
+    # def on_header_clicked(self, logicalIndex):
+    #     self.result_table.sortItems(logicalIndex, Qt.AscendingOrder)
      
     # Export new excel file due to the current table data    
     def export_excel(self):
