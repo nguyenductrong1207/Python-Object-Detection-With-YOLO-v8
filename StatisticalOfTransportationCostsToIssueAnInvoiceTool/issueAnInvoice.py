@@ -6,14 +6,14 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt
 
-class FindDataToIssueAnInvoice(QMainWindow):
+class IssueAnInvoice(QMainWindow):
     def __init__(self):
         super().__init__()
         self.df_dict = {}  # Dictionary to store dataframes for each sheet
         self.init_ui()
 
     def init_ui(self):
-        self.setWindowTitle("Search And Count Money Repeat Time")
+        self.setWindowTitle("Statistical analysis of data from the transportation summary sheet for invoice generation")
         self.setFixedSize(1000, 700)
 
         central_widget = QWidget()
@@ -273,5 +273,5 @@ class FindDataToIssueAnInvoice(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    search_and_count_app = FindDataToIssueAnInvoice()
+    search_and_count_app = IssueAnInvoice()
     sys.exit(app.exec_())

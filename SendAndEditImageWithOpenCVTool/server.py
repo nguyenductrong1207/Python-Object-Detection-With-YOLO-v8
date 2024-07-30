@@ -280,7 +280,7 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
     def send_single_data(self, money, count, total, sheet_name):
         try:
             # Replace with the client's IP address
-            server_ip = '127.0.0.1'  
+            server_ip = '192.168.136.1'  
             server_port = 12345 
             data = {
                 'file_path': self.file_edit.text(), 
@@ -303,7 +303,7 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
     def send_all_data(self):
         try:
             # Replace with the client's IP address
-            server_ip = '127.0.0.1'  
+            server_ip = '192.168.136.1'  
             server_port = 12345  
             data = {
                 'file_path': self.file_edit.text(), 
@@ -370,7 +370,7 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
                 return
 
             # Replace with the client's IP address
-            server_ip = '127.0.0.1'  
+            server_ip = '192.168.136.1'  
             server_port = 12345  
             
             # Open the image file
@@ -421,7 +421,7 @@ class SearchAndCountMoneyRepeatTime(QMainWindow):
     # Function for continuously listens for incoming connections, receives data from connected client 
     def start_server(self):
         # Replace with the server's IP address
-        server_ip = '127.0.0.1'  
+        server_ip = '192.168.136.1'  
         server_port = 54321  
         
         while True:
