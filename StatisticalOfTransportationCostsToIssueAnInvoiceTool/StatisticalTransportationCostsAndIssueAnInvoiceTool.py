@@ -1,8 +1,8 @@
 import sys
 import pandas as pd
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QLineEdit, QPushButton, QMessageBox, QTableWidget, QTableWidgetItem, QFileDialog, QComboBox, QSplitter
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, 
+    QMessageBox, QTableWidget, QTableWidgetItem, QFileDialog, QComboBox, QSplitter, QSpacerItem, QSizePolicy
 )
 from PyQt5.QtCore import Qt
 
@@ -24,6 +24,7 @@ class StatisticalTransportationCostsAndIssueAnInvoice(QMainWindow):
 
         # Splitter to divide the UI into left and right parts
         splitter = QSplitter()
+        splitter.setHandleWidth(30)  # Set the width of the handle to create a visible line
         layout.addWidget(splitter)
 
         # Left side widget setup
@@ -31,6 +32,20 @@ class StatisticalTransportationCostsAndIssueAnInvoice(QMainWindow):
         left_widget.setFixedWidth(700)
         left_layout = QVBoxLayout(left_widget)
         splitter.addWidget(left_widget)
+        
+        # Title and separator for the left side
+        left_title_layout = QHBoxLayout()
+        left_title_layout.addStretch()  # Add stretch before the title to center it
+        self.left_title = QLabel("Statistical Of Transportation Costs") 
+        self.left_title.setStyleSheet("font-weight: bold; font-size: 16px;")
+        left_title_layout.addWidget(self.left_title)
+        left_title_layout.addStretch()  # Add stretch after the title to center it
+        
+        left_layout.addLayout(left_title_layout)
+        
+        # Margin under the left title
+        left_title_margin = QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Fixed)
+        left_layout.addItem(left_title_margin)
 
         # Layout for file selection
         left_file_layout = QHBoxLayout()
@@ -117,15 +132,26 @@ class StatisticalTransportationCostsAndIssueAnInvoice(QMainWindow):
         
         left_layout.addLayout(left_buttons_layout)
         
-        # Totol money in table
-        self.left_total_cost_label = QLabel("")
-        self.left_total_cost_label.setVisible(False)
-        left_layout.addWidget(self.left_total_cost_label)
+        # Margin above the left table
+        left_buttons_layout_margin = QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Fixed)
+        left_layout.addItem(left_buttons_layout_margin)
         
-        # Totol weight in table
+        # Total cost and weight in table
+        self.left_total_cost_weight_layout = QHBoxLayout()
+        self.left_total_cost_label = QLabel("")
         self.left_total_weight_label = QLabel("")
+        
+        self.left_total_cost_label.setVisible(False)
         self.left_total_weight_label.setVisible(False)
-        left_layout.addWidget(self.left_total_weight_label)
+        
+        self.left_total_cost_weight_layout.addWidget(self.left_total_cost_label)
+        self.left_total_cost_weight_layout.addWidget(self.left_total_weight_label)
+        
+        left_layout.addLayout(self.left_total_cost_weight_layout)
+        
+        # Margin above the left table
+        left_table_margin = QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Fixed)
+        left_layout.addItem(left_table_margin)
 
         # Table to display results
         self.left_result_table = QTableWidget()
@@ -137,13 +163,27 @@ class StatisticalTransportationCostsAndIssueAnInvoice(QMainWindow):
 
         left_layout.addWidget(self.left_result_table)
         
-        #########################################################################################
+        #########################################################################################################################
 
         # Right side widget setup
         right_widget = QWidget()
         right_widget.setFixedWidth(700)
-        right_left_layout = QVBoxLayout(right_widget)
+        right_layout = QVBoxLayout(right_widget)
         splitter.addWidget(right_widget)
+        
+        # Title and separator for the right side
+        right_title_layout = QHBoxLayout()
+        right_title_layout.addStretch()  # Add stretch before the title to center it
+        self.right_title = QLabel("Issue An Invoice")
+        self.right_title.setStyleSheet("font-weight: bold; font-size: 16px;")
+        right_title_layout.addWidget(self.right_title)
+        right_title_layout.addStretch()  # Add stretch before the title to center it
+
+        right_layout.addLayout(right_title_layout)
+        
+        # Margin under the right title
+        right_title_margin = QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Fixed)
+        right_layout.addItem(right_title_margin)
 
         # Layout for file selection
         right_file_layout = QHBoxLayout()
@@ -160,13 +200,13 @@ class StatisticalTransportationCostsAndIssueAnInvoice(QMainWindow):
         right_file_layout.addWidget(self.right_file_edit)
         right_file_layout.addWidget(self.right_browse_button)
         
-        right_left_layout.addLayout(right_file_layout)
+        right_layout.addLayout(right_file_layout)
         
         # Layout for choosing which are begin column and rows to start searching
         self.right_separate_label = QLabel("    - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -")
         self.right_input_label = QLabel("    Enter column and row for searching")
-        right_left_layout.addWidget(self.right_separate_label)
-        right_left_layout.addWidget(self.right_input_label)
+        right_layout.addWidget(self.right_separate_label)
+        right_layout.addWidget(self.right_input_label)
         
         right_input_layout = QHBoxLayout()
         
@@ -205,7 +245,7 @@ class StatisticalTransportationCostsAndIssueAnInvoice(QMainWindow):
         right_input_layout.addLayout(right_row_start_layout)
         right_input_layout.addLayout(right_row_end_layout)
         
-        right_left_layout.addLayout(right_input_layout)
+        right_layout.addLayout(right_input_layout)
         
         # Layout for clear and search buttons
         right_buttons_layout = QHBoxLayout()
@@ -227,12 +267,20 @@ class StatisticalTransportationCostsAndIssueAnInvoice(QMainWindow):
         self.right_export_excel_button.setFixedWidth(200)
         right_buttons_layout.addWidget(self.right_export_excel_button)
         
-        right_left_layout.addLayout(right_buttons_layout)
+        right_layout.addLayout(right_buttons_layout)
         
-        # Totol money in table
+        # Margin above the left table
+        right_buttons_layout_margin = QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Fixed)
+        right_layout.addItem(right_buttons_layout_margin)
+        
+        # Total money in table
         self.right_total_label = QLabel("")
         self.right_total_label.setVisible(False)
-        right_left_layout.addWidget(self.right_total_label)
+        right_layout.addWidget(self.right_total_label)
+        
+        # Margin above the right table
+        right_table_margin = QSpacerItem(10, 10, QSizePolicy.Minimum, QSizePolicy.Fixed)
+        right_layout.addItem(right_table_margin)
 
         # Table to display results
         self.right_result_table = QTableWidget()
@@ -242,7 +290,7 @@ class StatisticalTransportationCostsAndIssueAnInvoice(QMainWindow):
         self.right_result_table.setSortingEnabled(True)  # Enable sorting
         self.right_result_table.horizontalHeader().sectionClicked.connect(self.right_on_header_clicked)  # Connect header click
 
-        right_left_layout.addWidget(self.right_result_table)
+        right_layout.addWidget(self.right_result_table)
 
         #########################################################################################
         # Show the main window
