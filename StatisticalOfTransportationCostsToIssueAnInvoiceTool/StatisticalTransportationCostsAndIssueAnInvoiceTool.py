@@ -352,7 +352,7 @@ class StatisticalTransportationCostsAndIssueAnInvoice(QMainWindow):
 
             # Keep track of the starting row index
             start_row = self.left_result_table.rowCount()
-
+            
             for i in range(len(date_column)):
                 date = date_column.iloc[i]
                 location = location_column.iloc[i]
