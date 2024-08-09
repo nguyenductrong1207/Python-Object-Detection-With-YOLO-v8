@@ -1,19 +1,20 @@
 # -*- coding: utf-8 -*-
 
 import sys
-import cv2
 import os
+import cv2
+from datetime import datetime
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QThread, QTimer
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QDialog, QApplication, QFileDialog, QHBoxLayout
-from ui import Ui_Dialog  # Import the generated UI class
 from ultralytics import YOLO
-from datetime import datetime
 import openpyxl
 from openpyxl import load_workbook
 import xlwings as xw
+from ui import UiDialog  # Import the generated UI class
 
+# Constants
 WIDTH = 1080
 HEIGHT = 720
 
@@ -46,50 +47,46 @@ class VideoThread(QThread):
         rgb_image = cv_img[:,:,::-1].copy()
         h, w, ch = rgb_image.shape
         bytes_per_line = ch * w
-        convert_to_Qt_format = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
-        p = convert_to_Qt_format.scaled(640, 480, QtCore.Qt.KeepAspectRatio)
+        convert_to_qt_format = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
+        p = convert_to_qt_format.scaled(640, 480, QtCore.Qt.KeepAspectRatio)
         return p
 
 class TehseenCode(QDialog):
     def __init__(self):
         super(TehseenCode, self).__init__()
-        self.ui = Ui_Dialog()
-        self.ui.setupUi(self)
+        self.ui = UiDialog()
+        self.ui.setup_ui(self)
         
+        # Initialization
         self.logic = 0
         self.value = 1
         self.img_folder = "img"
         os.makedirs(self.img_folder, exist_ok=True)
-        
-        self.ui.CAMERA.clicked.connect(self.start_video)
-        self.ui.TEXT.setText('Press "CAMERA" to connect with camera')
-        self.ui.CAPTURE.clicked.connect(self.CaptureClicked)
-        self.ui.QUIT.clicked.connect(self.quitClicked)
-        self.ui.UPLOAD.clicked.connect(self.uploadClicked)
-        self.ui.UNDO.clicked.connect(self.resetCounter)
-        # self.ui.SEND.clicked.connect(self.send_data_to_excel)
         self.thread = None
         self.model = None
-        self.setup_yolo_model()
-        self.ui.processedImgLabel.setScaledContents(True)
         self.total_detected_objects = 0
         self.SUMLIST = []
-
-        # Tạo một layout ngang để chứa label camera và label mới
+        
+        # Connect buttons
+        self.ui.camera_btn.clicked.connect(self.start_video)
+        self.ui.capture_btn.clicked.connect(self.CaptureClicked)
+        self.ui.quit_btn.clicked.connect(self.quitClicked)
+        self.ui.upload_btn.clicked.connect(self.uploadClicked)
+        self.ui.undo_btn.clicked.connect(self.resetCounter)
+        # self.ui.send_btn.clicked.connect(self.send_data_to_excel)
+        
+        self.ui.text_browser.setText('Press "CAMERA" to connect with camera')
+        self.ui.processed_img_label.setScaledContents(True)
+        
+        # Setup UI layout
         layout = QHBoxLayout()
-        self.ui.frameRight.setLayout(layout)
-
-        # Thêm label camera và label mới vào layout
-        layout.addWidget(self.ui.imgLabel)
-        layout.addWidget(self.ui.processedImgLabel)
-
-        # Thiết lập layout để căn giữa phần tử
+        self.ui.frame_right.setLayout(layout)
+        layout.addWidget(self.ui.img_label)
+        layout.addWidget(self.ui.processed_img_label)
         layout.setAlignment(QtCore.Qt.AlignCenter)
         
-        # Initialize variables for Excel handling
-        # self.excel_app = None
-        # self.excel_wb = None
-        # self.excel_sheet = None
+        # Initialize YOLO model
+        self.setup_yolo_model()
         
     def setup_yolo_model(self):
         folder_path = os.path.join(os.path.dirname(__file__), 'runs', 'detect')
@@ -126,11 +123,11 @@ class TehseenCode(QDialog):
 
     @pyqtSlot(QImage)
     def update_image(self, img):
-        self.ui.imgLabel.setPixmap(QPixmap.fromImage(img))
+        self.ui.img_label.setPixmap(QPixmap.fromImage(img))
 
     @pyqtSlot()
     def frameCaptured(self):
-        self.ui.TEXT.setText('Image captured')
+        self.ui.text_browser.setText('Image captured')
 
     def CaptureClicked(self):
         if self.thread is not None and self.thread.current_frame is not None:
@@ -148,7 +145,8 @@ class TehseenCode(QDialog):
         options = QFileDialog.Options()
         fileName, _ = QFileDialog.getOpenFileName(self, "Open Image File", "", "Images (*.png *.xpm *.jpg *.jpeg *.bmp);;All Files (*)", options=options)
         if fileName:
-            self.display_image(fileName, self.ui.imgLabel)  # Display the uploaded image on the left label
+            # Display the uploaded image on the left label
+            self.display_image(fileName, self.ui.img_label)  
             self.detect_image_and_display(fileName)
 
     def detect_image_and_display(self, image_path):
@@ -170,8 +168,8 @@ class TehseenCode(QDialog):
         self.total_detected_objects += num_detected_objects
         self.SUMLIST.append(num_detected_objects)
         elements = " + ".join(map(str, self.SUMLIST))
-        self.ui.TEXT.setText(f'Total: {elements} = {self.total_detected_objects}')
-        self.ui.totalObjectsLabel.setText(f'Total Objects: {self.total_detected_objects}')
+        self.ui.text_browser.setText(f'Total: {elements} = {self.total_detected_objects}')
+        self.ui.total_objects_label.setText(f'Total Objects: {self.total_detected_objects}')
         return detected_image_path
 
     def draw_bounding_boxes(self, image_path, results, output_dir):
@@ -219,11 +217,10 @@ class TehseenCode(QDialog):
 
     def display_image(self, image_path, label):
         cv_img = cv2.imread(image_path)
-        qt_img = self.convert_cv_qt(cv_img)
-        label.setPixmap(QPixmap.fromImage(qt_img))
+        label.setPixmap(QPixmap.fromImage(self.convert_cv_qt(cv_img)))
 
     def update_processed_image(self, img_path):
-        self.display_image(img_path, self.ui.processedImgLabel)
+        self.display_image(img_path, self.ui.processed_img_label)
         
     def quitClicked(self):
         if self.thread is not None:
@@ -233,25 +230,26 @@ class TehseenCode(QDialog):
 
     def resetCounter(self):
         try:
-                remove_lastcount = self.SUMLIST.pop()
-                SUMLIST = remove_lastcount
-                elements = " + ".join(map(str, self.SUMLIST))
-                self.total_detected_objects = sum(self.SUMLIST)
-                self.ui.TEXT.setText(f'Total: {elements} = {self.total_detected_objects}')
-                self.ui.totalObjectsLabel.setText(f'Total Objects: {self.total_detected_objects}')
+            remove_lastcount = self.SUMLIST.pop()
+            SUMLIST = remove_lastcount
+            elements = " + ".join(map(str, self.SUMLIST))
+            self.total_detected_objects = sum(self.SUMLIST)
+            self.ui.text_browser.setText(f'Total: {elements} = {self.total_detected_objects}')
+            self.ui.total_objects_label.setText(f'Total Objects: {self.total_detected_objects}')
         except:
-                print("List empty")
+            print("List empty")
         
     def convert_cv_qt(self, cv_img):
         rgb_image = cv_img[:,:,::-1].copy()
         h, w, ch = rgb_image.shape
         bytes_per_line = ch * w
-        convert_to_Qt_format = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
-        p = convert_to_Qt_format.scaled(640, 480, QtCore.Qt.KeepAspectRatio)
+        convert_to_qt_format = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
+        p = convert_to_qt_format.scaled(640, 480, QtCore.Qt.KeepAspectRatio)
         return p
-        
-    def open_excel_file(self, file_path):
-        """Open an Excel file and activate it for interaction."""
+    
+    # Open an Excel file and activate it for interaction    
+    def open_excel_file(self):
+        file_path = "D:/Github/Object-Detection-With-Python/ObjectDetection/ObjectDectecionWithOpenCV/test.xlsx"
         # Create an instance of Excel and make it visible
         self.excel_app = xw.App(visible=True)
         
@@ -266,10 +264,10 @@ class TehseenCode(QDialog):
                     book.close()
                     break
         except:
-            pass  # If there's no 'Book1', just continue
+            pass 
 
+    # Get the currently selected cell in the active Excel sheet and update the active sheet reference
     def get_selected_cell(self):
-        """Get the currently selected cell in the active Excel sheet and update the active sheet reference."""
         if self.excel_wb:
             try:
                 # Update the active sheet to the currently active one
@@ -287,35 +285,32 @@ class TehseenCode(QDialog):
                 return None
         return None
 
+    # Write the total_detected_objects to the selected cell in Excel
     def send_data_to_excel(self):
-        """Write the total_detected_objects to the selected cell in Excel."""
         try:
             # Add a small delay to ensure Excel has enough time to register the cell selection
             QTimer.singleShot(100, self._write_data_to_excel)
         except Exception as e:
             print(f"Error writing data to Excel: {e}")
-            self.ui.TEXT.setText('Failed to write data to Excel')
+            self.ui.text_browser.setText('Failed to write data to Excel')
+            
     def _write_data_to_excel(self):
         selected_cell = self.get_selected_cell()
         if selected_cell:
             try:
                 self.excel_sheet.range(selected_cell).value = self.total_detected_objects
                 self.excel_wb.save()  # Save the changes
-                self.ui.TEXT.setText(f'Data written to {selected_cell}')
+                self.ui.text_browser.setText(f'Data written to {selected_cell}')
             except Exception as e:
                 print(f"Error writing data to Excel: {e}")
-                self.ui.TEXT.setText('Failed to write data to Excel')
+                self.ui.text_browser.setText('Failed to write data to Excel')
         else:
-            self.ui.TEXT.setText('No cell selected in Excel')
+            self.ui.text_browser.setText('No cell selected in Excel')
             
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = TehseenCode()
-    window.setWindowTitle('PNJP Automatic Counting')
-    
-    # Open the Excel file when starting the app
-    excel_file_path = "D:/Github/Object-Detection-With-Python/ObjectDetection/ObjectDectecionWithOpenCV/test.xlsx"
-    window.open_excel_file(excel_file_path)
-    
-    window.show()
+    code = TehseenCode()
+    code.setWindowTitle('PNJP Automatic Counting')
+    code.open_excel_file()
+    code.show()
     sys.exit(app.exec_())
