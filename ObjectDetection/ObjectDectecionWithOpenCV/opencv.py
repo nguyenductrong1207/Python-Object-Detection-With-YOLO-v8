@@ -22,19 +22,6 @@ class VideoThread(QThread):
     frame_captured_signal = pyqtSignal()
 
     def __init__(self):
-        # super().__init__()
-        # self._run_flag = True
-        # self.picam2 = Picamera2()
-        # self.picam2.configure(self.picam2.create_preview_configuration(main={"size": (WIDTH,HEIGHT), "format": "RGB888"}))
-        # self.picam2.set_controls({"AwbEnable":1,
-        #     "AwbMode": 0,  # Cân bằng trắng tự động (1 là giá trị tương ứng với chế độ Auto)
-        #     #"Brightness": 0.5,  # Độ sáng trung bình (giá trị float)
-        #     #"Contrast": 1.0,    # Tăng độ tương phản (giá trị float)
-        #     #"Saturation": 1.0,  # Tăng độ bão hòa (giá trị float)
-        #     "Sharpness": 1.0    # Tăng độ sắc nét (giá trị float)
-        #     })
-        # self.picam2.start()
-        # self.current_frame = None
         super().__init__()
         self._run_flag = True
         self.cap = cv2.VideoCapture(0)  # Use default camera
@@ -44,11 +31,6 @@ class VideoThread(QThread):
 
     def run(self):
         while self._run_flag:
-            # frame = self.picam2.capture_array()
-            # qt_img = self.convert_cv_qt(frame)
-            # self.current_frame = frame
-            # self.change_pixmap_signal.emit(qt_img)
-            
             ret, frame = self.cap.read()
             if ret:
                 qt_img = self.convert_cv_qt(frame)
@@ -57,10 +39,6 @@ class VideoThread(QThread):
 
     def stop(self):
         self._run_flag = False
-        # self.picam2.stop()
-        # self.picam2.close()
-        # self.wait()  # Ensure the thread has finished
-        
         self.cap.release()  # Release the camera
         self.wait()  # Ensure the thread has finished
 
@@ -89,6 +67,7 @@ class TehseenCode(QDialog):
         self.ui.QUIT.clicked.connect(self.quitClicked)
         self.ui.UPLOAD.clicked.connect(self.uploadClicked)
         self.ui.UNDO.clicked.connect(self.resetCounter)
+        # self.ui.SEND.clicked.connect(self.send_data_to_excel)
         self.thread = None
         self.model = None
         self.setup_yolo_model()
@@ -111,15 +90,6 @@ class TehseenCode(QDialog):
         # self.excel_app = None
         # self.excel_wb = None
         # self.excel_sheet = None
-        
-        # Connect Send button to the new method
-        self.ui.SEND.clicked.connect(self.send_data_to_excel)
-
-    # def setup_yolo_model(self):
-    #     folder_path = "runs/detect"
-    #     self.latest_trainedfolder, _ = self.get_latest_modified_train_folder(folder_path, 'train')
-    #     self.latest_trainedfolder = "runs/detect/train75"
-    #     self.model = YOLO(task='detect', model=f"{self.latest_trainedfolder}/weights/best.pt")
         
     def setup_yolo_model(self):
         folder_path = os.path.join(os.path.dirname(__file__), 'runs', 'detect')
@@ -164,24 +134,13 @@ class TehseenCode(QDialog):
 
     def CaptureClicked(self):
         if self.thread is not None and self.thread.current_frame is not None:
-            # cv_img = self.thread.current_frame
-            # img_path = f"{self.img_folder}/image{self.value}.jpg"
-            # cv2.imwrite(img_path, cv_img)
-            # self.value += 1
-            # self.detect_image_and_display(img_path)
-            # # Restart the video thread to resume the video stream
-            # self.thread.stop()
-            
             # Define the path for the image
             img_path = os.path.join(self.img_folder, f"image{self.value}.jpg")
-            
             # Save the current frame
             cv2.imwrite(img_path, self.thread.current_frame)
             self.value += 1
-            
             # Process the saved image
             self.detect_image_and_display(img_path)
-            
             # Restart the video thread to resume the video stream
             self.thread.stop()
             
@@ -194,9 +153,12 @@ class TehseenCode(QDialog):
 
     def detect_image_and_display(self, image_path):
         detected_image_path = self.detect_image(image_path)
-        self.update_processed_image(detected_image_path)  # Update the processed image on the right label
-        #self.TEXT.setText('Image detected and displayed')
-
+        # Update the processed image on the right label
+        self.update_processed_image(detected_image_path)  
+        
+        # Send total_detected_objects to specfic excel cell automation 
+        self.send_data_to_excel()
+        
     def detect_image(self, image_path):
         output_dir = 'annotated_images'
         os.makedirs(output_dir, exist_ok=True)
@@ -352,7 +314,7 @@ if __name__ == "__main__":
     window.setWindowTitle('PNJP Automatic Counting')
     
     # Open the Excel file when starting the app
-    excel_file_path = "D:/Github/Object-Detection-With-Python/ObjectDetection/OpenCV/test.xlsx"
+    excel_file_path = "D:/Github/Object-Detection-With-Python/ObjectDetection/ObjectDectecionWithOpenCV/test.xlsx"
     window.open_excel_file(excel_file_path)
     
     window.show()
