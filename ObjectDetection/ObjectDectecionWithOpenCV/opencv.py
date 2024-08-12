@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import sys
 import os
 import cv2
@@ -7,7 +5,7 @@ from datetime import datetime
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QThread, QTimer
 from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtWidgets import QDialog, QApplication, QFileDialog, QHBoxLayout
+from PyQt5.QtWidgets import QDialog, QApplication, QFileDialog, QHBoxLayout, QMessageBox
 from ultralytics import YOLO
 import openpyxl
 from openpyxl import load_workbook
@@ -68,12 +66,13 @@ class TehseenCode(QDialog):
         self.SUMLIST = []
         
         # Connect buttons
+        self.ui.select_excel_btn.clicked.connect(self.open_excel_file_dialog)
         self.ui.camera_btn.clicked.connect(self.start_video)
         self.ui.capture_btn.clicked.connect(self.CaptureClicked)
         self.ui.quit_btn.clicked.connect(self.quitClicked)
         self.ui.upload_btn.clicked.connect(self.uploadClicked)
         self.ui.undo_btn.clicked.connect(self.resetCounter)
-        # self.ui.send_btn.clicked.connect(self.send_data_to_excel)
+        self.ui.send_btn.clicked.connect(self.send_data_to_excel)
         
         self.ui.text_browser.setText('Press "CAMERA" to connect with camera')
         self.ui.processed_img_label.setScaledContents(True)
@@ -229,15 +228,19 @@ class TehseenCode(QDialog):
         QApplication.quit()
 
     def resetCounter(self):
-        try:
-            remove_lastcount = self.SUMLIST.pop()
-            SUMLIST = remove_lastcount
-            elements = " + ".join(map(str, self.SUMLIST))
-            self.total_detected_objects = sum(self.SUMLIST)
-            self.ui.text_browser.setText(f'Total: {elements} = {self.total_detected_objects}')
-            self.ui.total_objects_label.setText(f'Total Objects: {self.total_detected_objects}')
-        except:
-            print("List empty")
+        reply = QMessageBox.question(self, 'Confirm Undo', 'Are you sure you want to undo the results?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            try:
+                remove_lastcount = self.SUMLIST.pop()
+                SUMLIST = remove_lastcount
+                elements = " + ".join(map(str, self.SUMLIST))
+                self.total_detected_objects = sum(self.SUMLIST)
+                self.ui.text_browser.setText(f'Total: {elements} = {self.total_detected_objects}')
+                self.ui.total_objects_label.setText(f'Total Objects: {self.total_detected_objects}')
+                self.send_data_to_excel()
+            except:
+                QMessageBox.information(self, "Error", "Can Not Undo") 
+                print("List empty: Can't Undo")
         
     def convert_cv_qt(self, cv_img):
         rgb_image = cv_img[:,:,::-1].copy()
@@ -247,13 +250,20 @@ class TehseenCode(QDialog):
         p = convert_to_qt_format.scaled(640, 480, QtCore.Qt.KeepAspectRatio)
         return p
     
+    # Choose a excel file 
+    def open_excel_file_dialog(self):
+        options = QFileDialog.Options()
+        file_path, _ = QFileDialog.getOpenFileName(self, "Select Excel File", "", "Excel Files (*.xlsx *.xls);;All Files (*)", options=options)
+        if file_path:
+            # If a file is selected, open it
+            self.open_excel_file(file_path)
+    
     # Open an Excel file and activate it for interaction    
-    def open_excel_file(self):
-        file_path = "D:/Github/Object-Detection-With-Python/ObjectDetection/ObjectDectecionWithOpenCV/test.xlsx"
+    def open_excel_file(self, file_path):
         # Create an instance of Excel and make it visible
         self.excel_app = xw.App(visible=True)
         
-        # Open the specified workbook first
+        # Open the specified workbook
         self.excel_wb = self.excel_app.books.open(file_path)
         self.excel_sheet = self.excel_wb.sheets.active
         
@@ -268,22 +278,25 @@ class TehseenCode(QDialog):
 
     # Get the currently selected cell in the active Excel sheet and update the active sheet reference
     def get_selected_cell(self):
-        if self.excel_wb:
-            try:
-                # Update the active sheet to the currently active one
-                self.excel_sheet = self.excel_wb.sheets.active
+        # Check if the 'excel_wb' attribute exists
+        if not hasattr(self, 'excel_wb') or self.excel_wb is None:
+            QMessageBox.critical(self, "Error", "Don't have any opened Excel file")
+            return None
+        
+        try:
+            # Update the active sheet to the currently active one
+            self.excel_sheet = self.excel_wb.sheets.active
                 
-                # Access the last selected range directly using the API
-                selection = self.excel_sheet.api.Application.Selection
+            # Access the last selected range directly using the API
+            selection = self.excel_sheet.api.Application.Selection
                 
-                # Convert the selection to an address format
-                address = selection.Address
-                print(f"Selected cell address: {address}")  # For debugging
-                return address
-            except Exception as e:
-                print(f"Error getting selected cell: {e}")
-                return None
-        return None
+            # Convert the selection to an address format
+            address = selection.Address
+            print(f"Selected cell address: {address}")  # For debugging
+            return address
+        except Exception as e:
+            print(f"Error getting selected cell: {e}")
+            QMessageBox.critical(self, "Error", "Error when getting selected cell") 
 
     # Write the total_detected_objects to the selected cell in Excel
     def send_data_to_excel(self):
@@ -311,6 +324,5 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     code = TehseenCode()
     code.setWindowTitle('PNJP Automatic Counting')
-    code.open_excel_file()
     code.show()
     sys.exit(app.exec_())

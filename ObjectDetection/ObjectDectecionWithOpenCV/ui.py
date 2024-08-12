@@ -5,6 +5,19 @@ class UiDialog(object):
         dialog.setObjectName("Dialog")
         dialog.resize(1500, 800)
         dialog.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        
+        # Add a button to select the Excel file
+        self.select_excel_btn = QtWidgets.QPushButton(dialog)
+        self.select_excel_btn.setGeometry(QtCore.QRect(30, 730, 150, 51))
+        font = QtGui.QFont()
+        font.setBold(True)
+        font.setWeight(75)
+        self.select_excel_btn.setFont(font)
+        self.select_excel_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        self.select_excel_btn.setObjectName("Select Excel File")
+
+        # Set the button text
+        self.select_excel_btn.setText("Select Excel File")
 
         # Create a horizontal layout for text_browser and total_objects_label
         self.horizontal_layout_widget = QtWidgets.QWidget(dialog)
