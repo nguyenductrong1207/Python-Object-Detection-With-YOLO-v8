@@ -8,21 +8,18 @@ class UiDialog(object):
         dialog.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         
         # Create a horizontal layout for text_browser and total_objects_label
-        self.horizontal_layout_widget = QtWidgets.QWidget(dialog)
-        self.horizontal_layout_widget.setGeometry(QtCore.QRect(350, 30, 1000, 40))
-        self.horizontal_layout_widget.setObjectName("horizontalLayoutWidget")
-
-        self.horizontal_layout = QtWidgets.QHBoxLayout(self.horizontal_layout_widget)
-        self.horizontal_layout.setContentsMargins(0, 0, 0, 0)
-        self.horizontal_layout.setSpacing(270)  # Add more space between text_browser and total_objects_label
-        self.horizontal_layout.setObjectName("horizontalLayout")
-
-        self.text_browser = QtWidgets.QTextBrowser(self.horizontal_layout_widget)
+        self.text_browser = QtWidgets.QTextBrowser(dialog)
+        self.text_browser.setGeometry(QtCore.QRect(190, 30, 900, 60))
+        self.text_browser.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.text_browser.setObjectName("TEXT")
+        self.text_browser.setStyleSheet("""
+            font-weight: bold;
+        """)
         self.text_browser.setAlignment(QtCore.Qt.AlignCenter)
-        self.horizontal_layout.addWidget(self.text_browser)
 
-        self.total_objects_label = QtWidgets.QLabel(self.horizontal_layout_widget)
+        self.total_objects_label = QtWidgets.QLabel(dialog)
+        self.total_objects_label.setGeometry(QtCore.QRect(1100, 40, 300, 40))
+        self.total_objects_label.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.total_objects_label.setObjectName("totalObjectsLabel")
         self.total_objects_label.setText("Total Objects: 0")
         self.total_objects_label.setAlignment(QtCore.Qt.AlignCenter)
@@ -31,7 +28,6 @@ class UiDialog(object):
             font-size: 27px;
             color: red;
         """)
-        self.horizontal_layout.addWidget(self.total_objects_label)
 
         self.img_label = QtWidgets.QLabel(dialog)
         self.img_label.setGeometry(QtCore.QRect(50, 0, 680, 255))
@@ -57,9 +53,10 @@ class UiDialog(object):
         self.frame_right.setObjectName("frameRight")
         
         # Buttons
+        font = QtGui.QFont()
+        
         self.select_excel_btn = QtWidgets.QPushButton(dialog)
         self.select_excel_btn.setGeometry(QtCore.QRect(30, 680, 140, 50))
-        font = QtGui.QFont()
         font.setBold(True)
         font.setWeight(75)
         self.select_excel_btn.setFont(font)
@@ -93,28 +90,47 @@ class UiDialog(object):
         self.undo_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.undo_btn.setObjectName("UNDO")
         self.undo_btn.setText("Undo")
+        
+        self.reload_btn = QtWidgets.QPushButton(dialog)
+        self.reload_btn.setGeometry(QtCore.QRect(1190, 680, 110, 50))
+        font.setBold(True)
+        font.setWeight(75)
+        self.reload_btn.setFont(font)
+        self.reload_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        self.reload_btn.setObjectName("RELOAD")
+        self.reload_btn.setText("Reload")
 
         self.quit_btn = QtWidgets.QPushButton(dialog)
         self.quit_btn.setGeometry(QtCore.QRect(1320, 680, 110, 50))
         font.setBold(True)
         font.setWeight(75)
-        self.upload_btn.setFont(font)
-        self.upload_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        self.quit_btn.setFont(font)
+        self.quit_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.quit_btn.setObjectName("QUIT")
         self.quit_btn.setText("Quit")
-
+        
+        # Add a ComboBox for camera selection
+        self.camera_select_combo = QtWidgets.QComboBox(dialog)
+        self.camera_select_combo.setGeometry(QtCore.QRect(537, 760, 110, 60))
+        font.setBold(True)
+        font.setWeight(75)
+        self.camera_select_combo.setFont(font)
+        self.camera_select_combo.setObjectName("cameraSelectCombo")
+        # self.camera_select_combo.addItems(["Camera 0", "Camera 1", "Camera 2", "Camera 3"])
+        self.camera_select_combo.setCurrentIndex(0)
+        
         self.camera_btn = QtWidgets.QPushButton(dialog)
-        self.camera_btn.setGeometry(QtCore.QRect(620, 760, 110, 60))
+        self.camera_btn.setGeometry(QtCore.QRect(650, 760, 140, 60))
         font = QtGui.QFont()
         font.setBold(True)
         font.setWeight(75)
         self.camera_btn.setFont(font)
         self.camera_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.camera_btn.setObjectName("CAMERA")
-        self.camera_btn.setText("Camera")
+        self.camera_btn.setText("Connect Camera")
 
         self.capture_btn = QtWidgets.QPushButton(dialog)
-        self.capture_btn.setGeometry(QtCore.QRect(750, 760, 110, 60))
+        self.capture_btn.setGeometry(QtCore.QRect(810, 760, 110, 60))
         font.setBold(True)
         font.setWeight(75)
         self.capture_btn.setFont(font)

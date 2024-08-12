@@ -3,7 +3,7 @@ import os
 import cv2
 from datetime import datetime
 from PyQt5 import QtCore
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, QThread, QTimer
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, QThread, QTimer, Qt
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QDialog, QApplication, QFileDialog, QHBoxLayout, QMessageBox
 from ultralytics import YOLO
@@ -19,16 +19,24 @@ HEIGHT = 720
 class VideoThread(QThread):
     change_pixmap_signal = pyqtSignal(QImage)
     frame_captured_signal = pyqtSignal()
+    camera_failed_signal = pyqtSignal()  # Signal for camera initialization failure
 
-    def __init__(self):
+    def __init__(self, camera_index=0):
         super().__init__()
         self._run_flag = True
-        self.cap = cv2.VideoCapture(0)  # Use default camera
+        self.cap = cv2.VideoCapture(camera_index)  # Use the selected camera index
+        if not self.cap.isOpened():  # Check if the camera failed to open
+            self.camera_failed_signal.emit()
+            return
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, WIDTH)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, HEIGHT)
         self.current_frame = None
 
     def run(self):
+        # Ensure the camera is opened before running the loop
+        if not self.cap.isOpened():  
+            return
+        
         while self._run_flag:
             ret, frame = self.cap.read()
             if ret:
@@ -38,7 +46,9 @@ class VideoThread(QThread):
 
     def stop(self):
         self._run_flag = False
-        self.cap.release()  # Release the camera
+        # Ensure the camera is only released if it was opened
+        if self.cap.isOpened():  
+            self.cap.release()
         self.wait()  # Ensure the thread has finished
 
     def convert_cv_qt(self, cv_img):
@@ -55,6 +65,9 @@ class TehseenCode(QDialog):
         self.ui = UiDialog()
         self.ui.setup_ui(self)
         
+        # Enable minimize and close buttons by setting the appropriate window flags
+        self.setWindowFlags(self.windowFlags() | Qt.WindowMinimizeButtonHint)
+        
         # Initialization
         self.logic = 0
         self.value = 1
@@ -65,17 +78,22 @@ class TehseenCode(QDialog):
         self.total_detected_objects = 0
         self.SUMLIST = []
         
-        # Connect buttons
-        self.ui.select_excel_btn.clicked.connect(self.open_excel_file_dialog)
-        self.ui.camera_btn.clicked.connect(self.start_video)
-        self.ui.capture_btn.clicked.connect(self.CaptureClicked)
-        self.ui.quit_btn.clicked.connect(self.quitClicked)
-        self.ui.upload_btn.clicked.connect(self.uploadClicked)
-        self.ui.undo_btn.clicked.connect(self.resetCounter)
-        self.ui.send_btn.clicked.connect(self.send_data_to_excel)
+        # Detect cameras and populate the dropdown
+        self.detect_cameras()
         
+        # Connect buttons
         self.ui.text_browser.setText('Press "Camera" to connect with camera')
         self.ui.processed_img_label.setScaledContents(True)
+        
+        self.ui.select_excel_btn.clicked.connect(self.open_excel_file_dialog)
+        self.ui.upload_btn.clicked.connect(self.upload_clicked)
+        self.ui.send_btn.clicked.connect(self.send_data_to_excel)
+        self.ui.undo_btn.clicked.connect(self.undo_reset_counter)
+        self.ui.reload_btn.clicked.connect(self.reload_app)
+        self.ui.quit_btn.clicked.connect(self.quit_clicked)
+        
+        self.ui.camera_btn.clicked.connect(self.start_video)
+        self.ui.capture_btn.clicked.connect(self.capture_clicked)
         
         # Setup UI layout
         layout = QHBoxLayout()
@@ -112,12 +130,39 @@ class TehseenCode(QDialog):
         except Exception as e:
             print(f"Error: {e}")
             return None, None
+        
+    def detect_cameras(self):
+        # Detect connected cameras and populate the dropdown
+        camera_indices = []
+        # Check the first 5 indices (adjust as needed)
+        for i in range(5):  
+            cap = cv2.VideoCapture(i)
+            
+            if cap is not None and cap.isOpened():
+                camera_indices.append(i)
+                cap.release()
+        
+        if not camera_indices:
+            self.ui.camera_select_combo.addItem("No Cameras Detected")
+        else:
+            self.ui.camera_select_combo.clear()
+            for index in camera_indices:
+                self.ui.camera_select_combo.addItem(f"Camera {index}")
+        
+        self.ui.camera_select_combo.setCurrentIndex(0)
+        
+    def get_camera_index(self):
+        # Get the selected camera index from the dropdown
+        return self.ui.camera_select_combo.currentIndex()
 
     @pyqtSlot()
     def start_video(self):
-        self.thread = VideoThread()
+        camera_index = self.get_camera_index()
+        self.thread = VideoThread(camera_index)
         self.thread.change_pixmap_signal.connect(self.update_image)
         self.thread.frame_captured_signal.connect(self.frameCaptured)
+        # Connect to the failure signal
+        self.thread.camera_failed_signal.connect(self.camera_failed)  
         self.thread.start()
 
     @pyqtSlot(QImage)
@@ -127,8 +172,13 @@ class TehseenCode(QDialog):
     @pyqtSlot()
     def frameCaptured(self):
         self.ui.text_browser.setText('Image captured')
-
-    def CaptureClicked(self):
+        
+    def camera_failed(self):
+        # Handle the camera initialization failure
+        QMessageBox.critical(self, "Camera Error", f"Failed to initialize camera with index {self.get_camera_index()}. Please select a different camera.")
+        self.ui.text_browser.setText("Failed to start the camera. Please try selecting a different camera.")
+    
+    def capture_clicked(self):
         if self.thread is not None and self.thread.current_frame is not None:
             # Define the path for the image
             img_path = os.path.join(self.img_folder, f"image{self.value}.jpg")
@@ -139,14 +189,17 @@ class TehseenCode(QDialog):
             self.detect_image_and_display(img_path)
             # Restart the video thread to resume the video stream
             self.thread.stop()
+        else:
+            QMessageBox.critical(self, "Error", "Please connect to a camera to capture")
+            return None
             
-    def uploadClicked(self):
+    def upload_clicked(self):
         options = QFileDialog.Options()
-        fileName, _ = QFileDialog.getOpenFileName(self, "Open Image File", "", "Images (*.png *.xpm *.jpg *.jpeg *.bmp);;All Files (*)", options=options)
-        if fileName:
+        file_name, _ = QFileDialog.getOpenFileName(self, "Open Image File", "", "Images (*.png *.xpm *.jpg *.jpeg *.bmp);;All Files (*)", options=options)
+        if file_name:
             # Display the uploaded image on the left label
-            self.display_image(fileName, self.ui.img_label)  
-            self.detect_image_and_display(fileName)
+            self.display_image(file_name, self.ui.img_label)  
+            self.detect_image_and_display(file_name)
 
     def detect_image_and_display(self, image_path):
         detected_image_path = self.detect_image(image_path)
@@ -221,13 +274,44 @@ class TehseenCode(QDialog):
     def update_processed_image(self, img_path):
         self.display_image(img_path, self.ui.processed_img_label)
         
-    def quitClicked(self):
-        if self.thread is not None:
-            self.resetCounter()
-            self.thread.stop()
-        QApplication.quit()
+    def quit_clicked(self):
+        reply = QMessageBox.question(self, 'Confirm Quit', 'Are you sure you want to quit the app?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            if self.thread is not None:
+                self.undo_reset_counter()
+                self.thread.stop()
+            QApplication.quit()
+          
+    def reload_app(self):
+        reply = QMessageBox.question(self, 'Confirm Reload', 'Are you sure you want to reload the app?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            # Stop the video thread
+            if self.thread is not None:
+                self.thread.stop()
+            
+            # Clear the UI elements if necessary
+            self.ui.img_label.clear()
+            self.ui.processed_img_label.clear()
+            self.ui.text_browser.clear()
+            
+            # Reinitialize any necessary variables or states
+            self.logic = 0
+            self.value = 1
+            self.thread = None
+            self.model = None
+            self.total_detected_objects = 0
+            self.SUMLIST.clear()
+            
+            # Reset the camera selection combo box
+            self.detect_cameras()
+            
+            self.ui.text_browser.setText('Press "Camera" to connect with camera')
+            self.ui.total_objects_label.setText(f'Total Objects: {self.total_detected_objects}')
 
-    def resetCounter(self):
+            # Reinitialize the YOLO model
+            self.setup_yolo_model()
+
+    def undo_reset_counter(self):
         reply = QMessageBox.question(self, 'Confirm Undo', 'Are you sure you want to undo the results?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
             try:
@@ -235,7 +319,7 @@ class TehseenCode(QDialog):
                 SUMLIST = remove_lastcount
                 elements = " + ".join(map(str, self.SUMLIST))
                 self.total_detected_objects = sum(self.SUMLIST)
-                self.ui.text_browser.setText(f'Total: {elements} = {self.total_detected_objects}')
+                self.ui.text_browser.setText(f'Total Objects: {elements} = {self.total_detected_objects}')
                 self.ui.total_objects_label.setText(f'Total Objects: {self.total_detected_objects}')
                 self.send_data_to_excel()
             except:
@@ -313,12 +397,10 @@ class TehseenCode(QDialog):
             try:
                 self.excel_sheet.range(selected_cell).value = self.total_detected_objects
                 self.excel_wb.save()  # Save the changes
-                self.ui.text_browser.setText(f'Data written to {selected_cell}')
+                # self.ui.text_browser.setText(f'Data written to {selected_cell}')
             except Exception as e:
                 print(f"Error writing data to Excel: {e}")
                 self.ui.text_browser.setText('Failed to write data to Excel')
-        else:
-            self.ui.text_browser.setText('No cell selected in Excel')
             
 if __name__ == "__main__":
     app = QApplication(sys.argv)
