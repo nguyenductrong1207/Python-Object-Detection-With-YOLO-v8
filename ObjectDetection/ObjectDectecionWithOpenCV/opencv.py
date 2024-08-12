@@ -74,7 +74,7 @@ class TehseenCode(QDialog):
         self.ui.undo_btn.clicked.connect(self.resetCounter)
         self.ui.send_btn.clicked.connect(self.send_data_to_excel)
         
-        self.ui.text_browser.setText('Press "CAMERA" to connect with camera')
+        self.ui.text_browser.setText('Press "Camera" to connect with camera')
         self.ui.processed_img_label.setScaledContents(True)
         
         # Setup UI layout
@@ -239,7 +239,7 @@ class TehseenCode(QDialog):
                 self.ui.total_objects_label.setText(f'Total Objects: {self.total_detected_objects}')
                 self.send_data_to_excel()
             except:
-                QMessageBox.information(self, "Error", "Can Not Undo") 
+                QMessageBox.critical(self, "Error", "Can Not Undo") 
                 print("List empty: Can't Undo")
         
     def convert_cv_qt(self, cv_img):
