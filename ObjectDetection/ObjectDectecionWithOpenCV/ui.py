@@ -2,14 +2,15 @@ from PyQt5 import QtCore, QtWidgets, QtGui
 
 class UiDialog(object):
     def setup_ui(self, dialog):
+        # Set up the main dialog window
         dialog.setObjectName("UI")
-        dialog.setWindowTitle("PNJP Automatic Product Counting Machineg")
+        dialog.setWindowTitle("PNJP Automatic Product Counting Machine")
         dialog.resize(1460, 850)
         dialog.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         
-        # Create a horizontal layout for text_browser and total_objects_label
+        # Create a text browser for displaying text at the top of the dialog
         self.text_browser = QtWidgets.QTextBrowser(dialog)
-        self.text_browser.setGeometry(QtCore.QRect(190, 30, 900, 60))
+        self.text_browser.setGeometry(QtCore.QRect(190, 20, 900, 60))
         self.text_browser.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.text_browser.setObjectName("TEXT")
         self.text_browser.setStyleSheet("""
@@ -17,8 +18,9 @@ class UiDialog(object):
         """)
         self.text_browser.setAlignment(QtCore.Qt.AlignCenter)
 
+        # Create a label to display the total number of objects
         self.total_objects_label = QtWidgets.QLabel(dialog)
-        self.total_objects_label.setGeometry(QtCore.QRect(1100, 40, 300, 40))
+        self.total_objects_label.setGeometry(QtCore.QRect(1100, 30, 300, 40))
         self.total_objects_label.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.total_objects_label.setObjectName("totalObjectsLabel")
         self.total_objects_label.setText("Total Objects: 0")
@@ -29,6 +31,7 @@ class UiDialog(object):
             color: red;
         """)
 
+        # Create a label to display the image
         self.img_label = QtWidgets.QLabel(dialog)
         self.img_label.setGeometry(QtCore.QRect(50, 0, 680, 255))
         self.img_label.setFrameShape(QtWidgets.QFrame.Box)
@@ -37,24 +40,28 @@ class UiDialog(object):
         self.img_label.setText("")
         self.img_label.setObjectName("imgLabel")
 
+        # Create a label to display the processed image
         self.processed_img_label = QtWidgets.QLabel(dialog)
         self.processed_img_label.setGeometry(QtCore.QRect(50, 0, 680, 255))
-        self.processed_img_label.setFrameShape(QtWidgets.QFrame.Box)
-        self.processed_img_label.setFrameShadow(QtWidgets.QFrame.Raised)
-        self.processed_img_label.setLineWidth(6)
+        self.processed_img_label.setFrameShape(QtWidgets.QFrame.Box) # Add a box frame around the label
+        self.processed_img_label.setFrameShadow(QtWidgets.QFrame.Raised) # Apply a raised shadow effect
+        self.processed_img_label.setLineWidth(6) # Set the line width for the frame
         self.processed_img_label.setText("")
         self.processed_img_label.setObjectName("processedImgLabel")
 
+        # Create a frame to contain the image labels and other elements
         self.frame_right = QtWidgets.QFrame(dialog)
         self.frame_right.setGeometry(QtCore.QRect(30, 100, 1400, 550))
-        self.frame_right.setFrameShape(QtWidgets.QFrame.Box)
-        self.frame_right.setFrameShadow(QtWidgets.QFrame.Raised)
-        self.frame_right.setLineWidth(2)
+        self.frame_right.setFrameShape(QtWidgets.QFrame.Box) # Add a box frame around the frame
+        self.frame_right.setFrameShadow(QtWidgets.QFrame.Raised) # Apply a raised shadow effect
+        self.frame_right.setLineWidth(2) # Set the line width for the frame
         self.frame_right.setObjectName("frameRight")
         
-        # Buttons
+        # Buttons 
+        # Create a QFont object to set the font for buttons
         font = QtGui.QFont()
         
+        # Create a button for selecting an Excel file
         self.select_excel_btn = QtWidgets.QPushButton(dialog)
         self.select_excel_btn.setGeometry(QtCore.QRect(30, 680, 140, 50))
         font.setBold(True)
@@ -64,15 +71,17 @@ class UiDialog(object):
         self.select_excel_btn.setObjectName("Select Excel File")
         self.select_excel_btn.setText("Select Excel File")    
 
-        self.upload_btn = QtWidgets.QPushButton(dialog)
-        self.upload_btn.setGeometry(QtCore.QRect(190, 680, 140, 50))
+        # Create a button for uploading an image
+        self.upload_img_btn = QtWidgets.QPushButton(dialog)
+        self.upload_img_btn.setGeometry(QtCore.QRect(190, 680, 140, 50))
         font.setBold(True)
         font.setWeight(75)
-        self.upload_btn.setFont(font)
-        self.upload_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
-        self.upload_btn.setObjectName("UPLOAD IMAGE")
-        self.upload_btn.setText("Upload Image")
+        self.upload_img_btn.setFont(font)
+        self.upload_img_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        self.upload_img_btn.setObjectName("UPLOAD IMAGE")
+        self.upload_img_btn.setText("Upload Image")
         
+        # Create a button for sending data to excel file
         self.send_btn = QtWidgets.QPushButton(dialog)
         self.send_btn.setGeometry(QtCore.QRect(350, 680, 110, 50))
         font.setBold(True)
@@ -82,6 +91,7 @@ class UiDialog(object):
         self.send_btn.setObjectName("SEND")
         self.send_btn.setText("Send")
 
+        # Create a button for undoing the last action
         self.undo_btn = QtWidgets.QPushButton(dialog)
         self.undo_btn.setGeometry(QtCore.QRect(480, 680, 110, 50))
         font.setBold(True)
@@ -91,6 +101,7 @@ class UiDialog(object):
         self.undo_btn.setObjectName("UNDO")
         self.undo_btn.setText("Undo")
         
+        # Create a button for reloading the application
         self.reload_btn = QtWidgets.QPushButton(dialog)
         self.reload_btn.setGeometry(QtCore.QRect(1190, 680, 110, 50))
         font.setBold(True)
@@ -100,6 +111,7 @@ class UiDialog(object):
         self.reload_btn.setObjectName("RELOAD")
         self.reload_btn.setText("Reload")
 
+        # Create a button for quitting the application
         self.quit_btn = QtWidgets.QPushButton(dialog)
         self.quit_btn.setGeometry(QtCore.QRect(1320, 680, 110, 50))
         font.setBold(True)
@@ -109,7 +121,7 @@ class UiDialog(object):
         self.quit_btn.setObjectName("QUIT")
         self.quit_btn.setText("Quit")
         
-        # Add a ComboBox for camera selection
+        # Create a combo box for selecting a camera
         self.camera_select_combo = QtWidgets.QComboBox(dialog)
         self.camera_select_combo.setGeometry(QtCore.QRect(537, 760, 110, 60))
         font.setBold(True)
@@ -118,6 +130,7 @@ class UiDialog(object):
         self.camera_select_combo.setObjectName("cameraSelectCombo")
         self.camera_select_combo.setCurrentIndex(0)
         
+        # Create a button to connect to the selected camera
         self.camera_btn = QtWidgets.QPushButton(dialog)
         self.camera_btn.setGeometry(QtCore.QRect(650, 760, 140, 60))
         font = QtGui.QFont()
@@ -128,6 +141,7 @@ class UiDialog(object):
         self.camera_btn.setObjectName("CAMERA")
         self.camera_btn.setText("Connect Camera")
 
+        # Create a button to capture an image from the connected camera
         self.capture_btn = QtWidgets.QPushButton(dialog)
         self.capture_btn.setGeometry(QtCore.QRect(810, 760, 110, 60))
         font.setBold(True)
