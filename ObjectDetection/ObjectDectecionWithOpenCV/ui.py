@@ -112,6 +112,15 @@ class UiDialog(object):
         self.undo_btn.setObjectName("UNDO")
         self.undo_btn.setText("Undo")
         
+        # Create a ComboBox for table selection
+        self.table_select_combo  = QtWidgets.QComboBox(dialog)
+        self.table_select_combo .setGeometry(QtCore.QRect(610, 680, 200, 50))
+        font.setBold(True)
+        font.setWeight(75)
+        self.table_select_combo .setFont(font)
+        self.table_select_combo .setObjectName("tableSelectCombo")
+        self.table_select_combo .setCurrentIndex(0)
+        
         # Create a button for reloading the application
         self.reload_btn = QtWidgets.QPushButton(dialog)
         self.reload_btn.setGeometry(QtCore.QRect(1190, 680, 110, 50))

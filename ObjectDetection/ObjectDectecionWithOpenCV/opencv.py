@@ -12,12 +12,16 @@ from openpyxl import load_workbook
 import xlwings as xw
 from ui import UiDialog  # Import the generated UI class
 from videoThread import VideoThread  # Import the VideoThread class
+from hdbcli import dbapi
 
 class TehseenCode(QDialog):
     def __init__(self):
         super(TehseenCode, self).__init__()
         self.ui = UiDialog()
         self.ui.setup_ui(self)
+        
+        # Fetch and populate SAP HANA tables
+        # self.populate_sap_hana_tables()
     
         # Initialization of variables
         self.logic = 0
@@ -236,11 +240,13 @@ class TehseenCode(QDialog):
     # Detects objects, displays the result and send the total_detected_objects to specific excel cell
     def detect_image_and_display(self, image_path):
         detected_image_path = self.detect_image(image_path)
-        # Update the processed image on the right label
         self.update_processed_image(detected_image_path)  
         
         # Send total_detected_objects to specfic excel cell automation 
         self.send_data_to_excel()
+        
+        # Send total_detected_objects to selected SAP HANA table
+        # self.send_data_to_sap_hana()
         
     # Capture the current frame from the camera and save it as an image
     def capture_new_image(self):
@@ -250,7 +256,6 @@ class TehseenCode(QDialog):
             # Save the current frame
             cv2.imwrite(img_path, self.thread.current_frame)
             self.value += 1
-            # Process the saved image
             self.detect_image_and_display(img_path)
             # Restart the video thread to resume the video stream
             self.thread.stop()
@@ -300,7 +305,6 @@ class TehseenCode(QDialog):
             try:
                 self.excel_sheet.range(selected_cell).value = self.total_detected_objects
                 self.excel_wb.save()  # Save the changes
-                # self.ui.text_browser.setText(f'Data written to {selected_cell}')
             except Exception as e:
                 print(f"Error writing data to Excel: {e}")
                 self.ui.text_browser.setText('Failed to write data to Excel')
@@ -380,6 +384,66 @@ class TehseenCode(QDialog):
             if self.thread is not None:
                 self.thread.stop()
             QApplication.quit()
+            
+    ########################################################################
+    
+    # SAP HANA TRANFER DATA
+    def populate_sap_hana_tables(self):
+        tables = self.get_sap_hana_tables()
+        self.ui.table_select_combo.clear()
+        self.ui.table_select_combo.addItems(tables)
+    
+    def connect_to_sap_hana(self):
+        try:
+            connection = dbapi.connect(
+                address="your_hana_host",
+                port=30015,  # Default SAP HANA port
+                user="your_username",
+                password="your_password"
+            )
+            print("Connected to SAP HANA")
+            return connection
+        except dbapi.Error as e:
+            print(f"Error connecting to SAP HANA: {e}")
+            return None
+    
+    def get_sap_hana_tables(self):
+        connection = self.connect_to_sap_hana()
+        if connection:
+            try:
+                cursor = connection.cursor()
+                cursor.execute("SELECT TABLE_NAME FROM SYS.TABLES WHERE SCHEMA_NAME = 'YOUR_SCHEMA_NAME'")
+                tables = cursor.fetchall()
+                return [table[0] for table in tables]  # Return a list of table names
+            except dbapi.Error as e:
+                print(f"Error fetching tables: {e}")
+                return []
+            finally:
+                cursor.close()
+                connection.close()
+        return []
+
+    def send_data_to_sap_hana(self):
+        table_name = self.ui.table_select_combo.currentText()  # Get selected table from combo box
+        column_name = "YOUR_COLUMN"  # Change this to the correct column name
+
+        connection = self.connect_to_sap_hana()
+        if connection:
+            try:
+                cursor = connection.cursor()
+                query = f"""
+                INSERT INTO {table_name} ({column_name}, TIMESTAMP)
+                VALUES (?, CURRENT_TIMESTAMP)
+                """
+                cursor.execute(query, (self.total_detected_objects,))
+                connection.commit()
+                print(f"Data successfully inserted into {table_name}.")
+            except dbapi.Error as e:
+                print(f"Error executing SQL query: {e}")
+            finally:
+                cursor.close()
+                connection.close()
+    
             
 if __name__ == "__main__":
     app = QApplication(sys.argv)
