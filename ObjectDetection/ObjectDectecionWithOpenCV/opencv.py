@@ -129,9 +129,12 @@ class TehseenCode(QDialog):
                 self.ui.camera_select_combo.addItem(f"Camera {index}")
         
         self.ui.camera_select_combo.setCurrentIndex(0)
-        
+    
+    # Get the selected camera index from the dropdown    
     def get_selected_camera_index(self):
-        # Get the selected camera index from the dropdown
+        # Stop the video thread
+        if self.thread is not None:
+            self.thread.stop()
         return self.ui.camera_select_combo.currentIndex()
         
     # Handle the failure of camera initialization
@@ -188,7 +191,7 @@ class TehseenCode(QDialog):
         # Add a title showing the total number of detected objects
         num_boxes = results[0].boxes.shape[0] if len(results[0].boxes.shape) > 0 else 0
         font_scale = width / 500
-        title = f"PNJP detects: {num_boxes} objects"
+        title = f"Detected {num_boxes} objects"
         text_size = cv2.getTextSize(title, font, font_scale, font_thickness)[0]
         text_x = (width - text_size[0]) // 2
         text_y = text_size[1] + 10
@@ -220,18 +223,23 @@ class TehseenCode(QDialog):
         options = QFileDialog.Options()
         file_name, _ = QFileDialog.getOpenFileName(self, "Open Image File", "", "Images (*.png *.xpm *.jpg *.jpeg *.bmp);;All Files (*)", options=options)
         if file_name:
-            # Display the uploaded image on the left label
-            self.display_image(file_name, self.ui.img_label)  
+            # Stop the video thread
+            if self.thread is not None:
+                self.thread.stop()   
+                self.thread = None 
+            
+            try:
+                # Use QTimer.singleShot with a lambda or partial to delay image display
+                QTimer.singleShot(100, lambda: self.display_image(file_name, self.ui.img_label))  
+            except Exception as e:
+                print(f"Fail to display uploaded image: {e}")
+
             self.detect_image_and_display(file_name)
             
     # Displays the selected image
-    def display_image(self, image_path, label):
-        # Stop the video thread
-        if self.thread is not None:
-            self.thread.stop()
-        
+    def display_image(self, image_path, img_label):
         cv_img = cv2.imread(image_path)
-        label.setPixmap(QPixmap.fromImage(self.convert_cv_qt(cv_img)))
+        img_label.setPixmap(QPixmap.fromImage(self.convert_cv_qt(cv_img)))
        
     # Displays the processed image
     def update_processed_image(self, img_path):
@@ -257,11 +265,8 @@ class TehseenCode(QDialog):
             cv2.imwrite(img_path, self.thread.current_frame)
             self.value += 1
             self.detect_image_and_display(img_path)
-            # Restart the video thread to resume the video stream
-            self.thread.stop()
         else:
             QMessageBox.critical(self, "Error", "Please connect to a camera to capture")
-            return None   
               
     # Open a dialog to select an Excel file
     def upload_excel_file(self):
@@ -296,7 +301,6 @@ class TehseenCode(QDialog):
             QTimer.singleShot(100, self.write_data_to_excel)
         except Exception as e:
             print(f"Error writing data to Excel: {e}")
-            self.ui.text_browser.setText('Failed to write data to Excel')
             
     # Writes the total_detected_objects to the given cell in Excel
     def write_data_to_excel(self):
@@ -388,63 +392,62 @@ class TehseenCode(QDialog):
     ########################################################################
     
     # SAP HANA TRANFER DATA
-    def populate_sap_hana_tables(self):
-        tables = self.get_sap_hana_tables()
-        self.ui.table_select_combo.clear()
-        self.ui.table_select_combo.addItems(tables)
+    # def populate_sap_hana_tables(self):
+    #     tables = self.get_sap_hana_tables()
+    #     self.ui.table_select_combo.clear()
+    #     self.ui.table_select_combo.addItems(tables)
     
-    def connect_to_sap_hana(self):
-        try:
-            connection = dbapi.connect(
-                address="your_hana_host",
-                port=30015,  # Default SAP HANA port
-                user="your_username",
-                password="your_password"
-            )
-            print("Connected to SAP HANA")
-            return connection
-        except dbapi.Error as e:
-            print(f"Error connecting to SAP HANA: {e}")
-            return None
+    # def connect_to_sap_hana(self):
+    #     try:
+    #         connection = dbapi.connect(
+    #             address="your_hana_host",
+    #             port=30015,  # Default SAP HANA port
+    #             user="your_username",
+    #             password="your_password"
+    #         )
+    #         print("Connected to SAP HANA")
+    #         return connection
+    #     except dbapi.Error as e:
+    #         print(f"Error connecting to SAP HANA: {e}")
+    #         return None
     
-    def get_sap_hana_tables(self):
-        connection = self.connect_to_sap_hana()
-        if connection:
-            try:
-                cursor = connection.cursor()
-                cursor.execute("SELECT TABLE_NAME FROM SYS.TABLES WHERE SCHEMA_NAME = 'YOUR_SCHEMA_NAME'")
-                tables = cursor.fetchall()
-                return [table[0] for table in tables]  # Return a list of table names
-            except dbapi.Error as e:
-                print(f"Error fetching tables: {e}")
-                return []
-            finally:
-                cursor.close()
-                connection.close()
-        return []
+    # def get_sap_hana_tables(self):
+    #     connection = self.connect_to_sap_hana()
+    #     if connection:
+    #         try:
+    #             cursor = connection.cursor()
+    #             cursor.execute("SELECT TABLE_NAME FROM SYS.TABLES WHERE SCHEMA_NAME = 'YOUR_SCHEMA_NAME'")
+    #             tables = cursor.fetchall()
+    #             return [table[0] for table in tables]  # Return a list of table names
+    #         except dbapi.Error as e:
+    #             print(f"Error fetching tables: {e}")
+    #             return []
+    #         finally:
+    #             cursor.close()
+    #             connection.close()
+    #     return []
 
-    def send_data_to_sap_hana(self):
-        table_name = self.ui.table_select_combo.currentText()  # Get selected table from combo box
-        column_name = "YOUR_COLUMN"  # Change this to the correct column name
+    # def send_data_to_sap_hana(self):
+    #     table_name = self.ui.table_select_combo.currentText()  # Get selected table from combo box
+    #     column_name = "YOUR_COLUMN"  # Change this to the correct column name
 
-        connection = self.connect_to_sap_hana()
-        if connection:
-            try:
-                cursor = connection.cursor()
-                query = f"""
-                INSERT INTO {table_name} ({column_name}, TIMESTAMP)
-                VALUES (?, CURRENT_TIMESTAMP)
-                """
-                cursor.execute(query, (self.total_detected_objects,))
-                connection.commit()
-                print(f"Data successfully inserted into {table_name}.")
-            except dbapi.Error as e:
-                print(f"Error executing SQL query: {e}")
-            finally:
-                cursor.close()
-                connection.close()
+    #     connection = self.connect_to_sap_hana()
+    #     if connection:
+    #         try:
+    #             cursor = connection.cursor()
+    #             query = f"""
+    #             INSERT INTO {table_name} ({column_name}, TIMESTAMP)
+    #             VALUES (?, CURRENT_TIMESTAMP)
+    #             """
+    #             cursor.execute(query, (self.total_detected_objects,))
+    #             connection.commit()
+    #             print(f"Data successfully inserted into {table_name}.")
+    #         except dbapi.Error as e:
+    #             print(f"Error executing SQL query: {e}")
+    #         finally:
+    #             cursor.close()
+    #             connection.close()
     
-            
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     code = TehseenCode()
