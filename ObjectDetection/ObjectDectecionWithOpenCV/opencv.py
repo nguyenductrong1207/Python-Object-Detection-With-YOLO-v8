@@ -222,6 +222,10 @@ class TehseenCode(QDialog):
         return output_path
 
     def display_image(self, image_path, label):
+        # Stop the video thread
+        if self.thread is not None:
+            self.thread.stop()
+        
         cv_img = cv2.imread(image_path)
         label.setPixmap(QPixmap.fromImage(self.convert_cv_qt(cv_img)))
 
@@ -243,11 +247,6 @@ class TehseenCode(QDialog):
             if self.thread is not None:
                 self.thread.stop()
             
-            # Clear the UI elements if necessary
-            self.ui.img_label.clear()
-            self.ui.processed_img_label.clear()
-            self.ui.text_browser.clear()
-            
             # Reinitialize any necessary variables or states
             self.logic = 0
             self.value = 1
@@ -255,6 +254,11 @@ class TehseenCode(QDialog):
             self.model = None
             self.total_detected_objects = 0
             self.SUMLIST.clear()
+            
+            # Clear the UI elements if necessary
+            self.ui.img_label.clear()
+            self.ui.processed_img_label.clear()
+            self.ui.text_browser.clear()
             
             # Reset the camera selection combo box
             self.detect_cameras()
@@ -359,6 +363,5 @@ class TehseenCode(QDialog):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     code = TehseenCode()
-    code.setWindowTitle('PNJP Automatic Counting')
     code.show()
     sys.exit(app.exec_())

@@ -2,8 +2,8 @@ from PyQt5 import QtCore, QtWidgets, QtGui
 
 class UiDialog(object):
     def setup_ui(self, dialog):
-        dialog.setObjectName("Dialog")
-        dialog.setWindowTitle("Dialog")
+        dialog.setObjectName("UI")
+        dialog.setWindowTitle("PNJP Automatic Product Counting Machineg")
         dialog.resize(1460, 850)
         dialog.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         
@@ -116,7 +116,6 @@ class UiDialog(object):
         font.setWeight(75)
         self.camera_select_combo.setFont(font)
         self.camera_select_combo.setObjectName("cameraSelectCombo")
-        # self.camera_select_combo.addItems(["Camera 0", "Camera 1", "Camera 2", "Camera 3"])
         self.camera_select_combo.setCurrentIndex(0)
         
         self.camera_btn = QtWidgets.QPushButton(dialog)
