@@ -2,11 +2,22 @@ from PyQt5 import QtCore, QtWidgets, QtGui
 
 class UiDialog(object):
     def setup_ui(self, dialog):
-        # Set up the main dialog window
+        # Set up the main dialog window with minimize button hint and close buttons
         dialog.setObjectName("UI")
         dialog.setWindowTitle("PNJP Automatic Product Counting Machine")
+        dialog.setWindowFlags(
+            QtCore.Qt.Window |
+            QtCore.Qt.WindowMinimizeButtonHint |
+            QtCore.Qt.WindowCloseButtonHint
+        )
         dialog.resize(1460, 850)
         dialog.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        
+        # Load and resize the logo image
+        logo_pixmap = QtGui.QPixmap("logo.webp") 
+        logo_pixmap = logo_pixmap.scaled(50, 50, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+        logo_icon = QtGui.QIcon(logo_pixmap)
+        dialog.setWindowIcon(logo_icon)
         
         # Create a text browser for displaying text at the top of the dialog
         self.text_browser = QtWidgets.QTextBrowser(dialog)

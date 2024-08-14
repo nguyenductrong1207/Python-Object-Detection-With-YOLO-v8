@@ -18,10 +18,7 @@ class TehseenCode(QDialog):
         super(TehseenCode, self).__init__()
         self.ui = UiDialog()
         self.ui.setup_ui(self)
-        
-        # Enable minimize and close buttons by setting the appropriate window flags
-        self.setWindowFlags(self.windowFlags() | Qt.WindowMinimizeButtonHint)
-        
+    
         # Initialization of variables
         self.logic = 0
         self.value = 1
