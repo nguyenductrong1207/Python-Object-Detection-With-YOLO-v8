@@ -171,7 +171,7 @@ class TehseenCode(QDialog):
         height, width, _ = img.shape
         font = cv2.FONT_HERSHEY_SIMPLEX
         font_scale = width / 1500
-        font_thickness = 3
+        font_thickness = 2
         text_color = (0, 0, 255)
         bg_color = (0, 0, 0)
 
@@ -190,10 +190,11 @@ class TehseenCode(QDialog):
 
         # Add a title showing the total number of detected objects
         num_boxes = results[0].boxes.shape[0] if len(results[0].boxes.shape) > 0 else 0
-        font_scale = width / 500
+        font_scale = width / 800
+        font_thickness_title = 4
         title = f"Detected {num_boxes} objects"
-        text_size = cv2.getTextSize(title, font, font_scale, font_thickness)[0]
-        text_x = (width - text_size[0]) // 2
+        text_size = cv2.getTextSize(title, font, font_scale, font_thickness_title)[0]
+        text_x = (width - text_size[0]) - 20
         text_y = text_size[1] + 10
         text_color = (255, 255, 255)
         bg_color = (0, 0, 0)
