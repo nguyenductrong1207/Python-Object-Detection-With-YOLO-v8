@@ -5,7 +5,7 @@ from datetime import datetime
 from PyQt5 import QtCore
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QThread, QTimer, Qt
 from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtWidgets import QDialog, QApplication, QFileDialog, QHBoxLayout, QMessageBox
+from PyQt5.QtWidgets import QDialog, QApplication, QFileDialog, QHBoxLayout, QMessageBox, QDesktopWidget 
 from ultralytics import YOLO
 import openpyxl
 from openpyxl import load_workbook
@@ -19,6 +19,9 @@ class TehseenCode(QDialog):
         super(TehseenCode, self).__init__()
         self.ui = UiDialog()
         self.ui.setup_ui(self)
+        
+        # Center the window on the screen
+        self.center_window()
         
         # Fetch and populate SAP HANA tables
         # self.populate_sap_hana_tables()
@@ -60,6 +63,18 @@ class TehseenCode(QDialog):
         
         # Initialize the YOLO model for object detection
         self.setup_yolo_model()
+    
+    def center_window(self):
+        # Get the screen's geometry
+        screen_rect = QDesktopWidget().availableGeometry()
+        window_rect = self.frameGeometry()
+        
+        # Calculate the center position
+        x = (screen_rect.width() - window_rect.width()) // 2
+        y = (screen_rect.height() - window_rect.height()) // 2
+        
+        # Move the window to the calculated position
+        self.move(x, y)
         
     # Setup the YOLO model with the latest trained weights
     def setup_yolo_model(self):

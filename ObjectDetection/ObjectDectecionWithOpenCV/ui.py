@@ -172,24 +172,6 @@ class UiDialog(object):
         self.capture_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.capture_btn.setObjectName("CAPTURE")
         self.capture_btn.setText("Capture")
-        
-        # Center the dialog on the screen
-        self.center_dialog(dialog)
 
         QtCore.QMetaObject.connectSlotsByName(dialog)
         
-    def center_dialog(self, dialog):
-        # Get the screen's geometry
-        screen_geometry = QtWidgets.QApplication.desktop().screenGeometry()
-        
-        # Get the geometry of the dialog
-        dialog_geometry = dialog.frameGeometry()
-        
-        # Calculate the center point
-        center_point = screen_geometry.center()
-        
-        # Move the dialog to the center of the screen
-        dialog_geometry.moveCenter(center_point)
-        
-        # Move the top-left point of the dialog to the new center
-        dialog.move(dialog_geometry.topLeft())
