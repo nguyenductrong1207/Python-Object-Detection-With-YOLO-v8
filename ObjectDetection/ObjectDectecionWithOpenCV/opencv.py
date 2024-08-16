@@ -210,13 +210,16 @@ class TehseenCode(QDialog):
         print(f"Annotated image saved at {output_path}")
         return output_path
 
-    # Converts an OpenCV image (NumPy array) to a QPixmap suitable for displaying in a QLabel
+    # Convert the frame to QImage format for PyQt display
     def convert_cv_qt(self, cv_img):
+        # Convert from BGR to RGB format required by QImage
         rgb_image = cv_img[:,:,::-1].copy()
         h, w, ch = rgb_image.shape
-        bytes_per_line = ch * w
+        bytes_per_line = ch * w # Calculate the number of bytes per line
+        # Convert the image data to QImage format
         convert_to_qt_format = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
-        p = convert_to_qt_format.scaled(640, 480, QtCore.Qt.KeepAspectRatio)
+        # Scale the image to fit the display area while keeping the aspect ratio
+        p = convert_to_qt_format.scaled(790, 610, QtCore.Qt.KeepAspectRatio)
         return p
 
     # Open a dialog to select an image for detection

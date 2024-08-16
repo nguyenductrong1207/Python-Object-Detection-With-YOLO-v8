@@ -57,7 +57,7 @@ class VideoThread(QThread):
         # Convert the image data to QImage format
         convert_to_qt_format = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
         # Scale the image to fit the display area while keeping the aspect ratio
-        p = convert_to_qt_format.scaled(640, 480, QtCore.Qt.KeepAspectRatio)
+        p = convert_to_qt_format.scaled(790, 610, QtCore.Qt.KeepAspectRatio)
         return p
 
     def stop(self):

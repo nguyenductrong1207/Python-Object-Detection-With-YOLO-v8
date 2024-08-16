@@ -10,7 +10,7 @@ class UiDialog(object):
             QtCore.Qt.WindowMinimizeButtonHint |
             QtCore.Qt.WindowCloseButtonHint
         )
-        dialog.resize(1460, 860)
+        dialog.resize(1750, 930)
         dialog.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         
         # Load and resize the logo image
@@ -21,7 +21,7 @@ class UiDialog(object):
         
         # Create a text browser for displaying text at the top of the dialog
         self.text_browser = QtWidgets.QTextBrowser(dialog)
-        self.text_browser.setGeometry(QtCore.QRect(190, 20, 900, 60))
+        self.text_browser.setGeometry(QtCore.QRect(200, 20, 1200, 60))
         self.text_browser.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.text_browser.setObjectName("TEXT")
         self.text_browser.setStyleSheet("""
@@ -31,7 +31,7 @@ class UiDialog(object):
 
         # Create a label to display the total number of objects
         self.total_objects_label = QtWidgets.QLabel(dialog)
-        self.total_objects_label.setGeometry(QtCore.QRect(1100, 30, 300, 40))
+        self.total_objects_label.setGeometry(QtCore.QRect(1400, 30, 300, 40))
         self.total_objects_label.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.total_objects_label.setObjectName("totalObjectsLabel")
         self.total_objects_label.setText("Total Objects: 0")
@@ -41,32 +41,34 @@ class UiDialog(object):
             font-size: 27px;
             color: red;
         """)
+        
+        # Create a frame to contain the image labels and other elements
+        self.frame_right = QtWidgets.QFrame(dialog)
+        self.frame_right.setGeometry(QtCore.QRect(30, 100, 1690, 650))
+        self.frame_right.setFrameShape(QtWidgets.QFrame.Box) # Add a box frame around the frame
+        self.frame_right.setFrameShadow(QtWidgets.QFrame.Raised) # Apply a raised shadow effect
+        self.frame_right.setLineWidth(2) # Set the line width for the frame
+        self.frame_right.setObjectName("frameRight")
 
         # Create a label to display the image
         self.img_label = QtWidgets.QLabel(dialog)
-        self.img_label.setGeometry(QtCore.QRect(50, 0, 680, 255))
-        self.img_label.setFrameShape(QtWidgets.QFrame.Box)
-        self.img_label.setFrameShadow(QtWidgets.QFrame.Raised)
-        self.img_label.setLineWidth(6)
+        self.img_label.setGeometry(QtCore.QRect(50, 0, 790, 610))
+        self.img_label.setFrameShape(QtWidgets.QFrame.Box) # Add a box frame around the label
+        self.img_label.setFrameShadow(QtWidgets.QFrame.Raised) # Apply a raised shadow effect
+        self.img_label.setLineWidth(6) # Set the line width for the frame
+        self.img_label.setAlignment(QtCore.Qt.AlignCenter) # Center the image within the label
         self.img_label.setText("")
         self.img_label.setObjectName("imgLabel")
 
         # Create a label to display the processed image
         self.processed_img_label = QtWidgets.QLabel(dialog)
-        self.processed_img_label.setGeometry(QtCore.QRect(50, 0, 680, 255))
+        self.processed_img_label.setGeometry(QtCore.QRect(50, 0, 790, 610))
         self.processed_img_label.setFrameShape(QtWidgets.QFrame.Box) # Add a box frame around the label
         self.processed_img_label.setFrameShadow(QtWidgets.QFrame.Raised) # Apply a raised shadow effect
         self.processed_img_label.setLineWidth(6) # Set the line width for the frame
+        self.processed_img_label.setAlignment(QtCore.Qt.AlignCenter) # Center the image within the label
         self.processed_img_label.setText("")
         self.processed_img_label.setObjectName("processedImgLabel")
-
-        # Create a frame to contain the image labels and other elements
-        self.frame_right = QtWidgets.QFrame(dialog)
-        self.frame_right.setGeometry(QtCore.QRect(30, 100, 1400, 550))
-        self.frame_right.setFrameShape(QtWidgets.QFrame.Box) # Add a box frame around the frame
-        self.frame_right.setFrameShadow(QtWidgets.QFrame.Raised) # Apply a raised shadow effect
-        self.frame_right.setLineWidth(2) # Set the line width for the frame
-        self.frame_right.setObjectName("frameRight")
         
         # Buttons 
         # Create a QFont object to set the font for buttons
@@ -74,7 +76,7 @@ class UiDialog(object):
         
         # Create a button for selecting an Excel file
         self.select_excel_btn = QtWidgets.QPushButton(dialog)
-        self.select_excel_btn.setGeometry(QtCore.QRect(30, 680, 140, 50))
+        self.select_excel_btn.setGeometry(QtCore.QRect(30, 770, 140, 50))
         font.setBold(True)
         font.setWeight(75)
         self.select_excel_btn.setFont(font)
@@ -84,7 +86,7 @@ class UiDialog(object):
 
         # Create a button for uploading an image
         self.upload_img_btn = QtWidgets.QPushButton(dialog)
-        self.upload_img_btn.setGeometry(QtCore.QRect(190, 680, 140, 50))
+        self.upload_img_btn.setGeometry(QtCore.QRect(190, 770, 140, 50))
         font.setBold(True)
         font.setWeight(75)
         self.upload_img_btn.setFont(font)
@@ -94,7 +96,7 @@ class UiDialog(object):
         
         # Create a button for sending data to excel file
         self.send_btn = QtWidgets.QPushButton(dialog)
-        self.send_btn.setGeometry(QtCore.QRect(350, 680, 110, 50))
+        self.send_btn.setGeometry(QtCore.QRect(350, 770, 120, 50))
         font.setBold(True)
         font.setWeight(75)
         self.send_btn.setFont(font)
@@ -104,7 +106,7 @@ class UiDialog(object):
 
         # Create a button for undoing the last action
         self.undo_btn = QtWidgets.QPushButton(dialog)
-        self.undo_btn.setGeometry(QtCore.QRect(480, 680, 110, 50))
+        self.undo_btn.setGeometry(QtCore.QRect(490, 770, 120, 50))
         font.setBold(True)
         font.setWeight(75)
         self.undo_btn.setFont(font)
@@ -123,7 +125,7 @@ class UiDialog(object):
         
         # Create a button for reloading the application
         self.reload_btn = QtWidgets.QPushButton(dialog)
-        self.reload_btn.setGeometry(QtCore.QRect(1190, 680, 110, 50))
+        self.reload_btn.setGeometry(QtCore.QRect(1460, 770, 120, 50))
         font.setBold(True)
         font.setWeight(75)
         self.reload_btn.setFont(font)
@@ -133,17 +135,17 @@ class UiDialog(object):
 
         # Create a button for quitting the application
         self.quit_btn = QtWidgets.QPushButton(dialog)
-        self.quit_btn.setGeometry(QtCore.QRect(1320, 680, 110, 50))
+        self.quit_btn.setGeometry(QtCore.QRect(1600, 770, 120, 50))
         font.setBold(True)
         font.setWeight(75)
         self.quit_btn.setFont(font)
         self.quit_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.quit_btn.setObjectName("QUIT")
         self.quit_btn.setText("Quit")
-        
+         
         # Create a combo box for selecting a camera
         self.camera_select_combo = QtWidgets.QComboBox(dialog)
-        self.camera_select_combo.setGeometry(QtCore.QRect(537, 760, 110, 60))
+        self.camera_select_combo.setGeometry(QtCore.QRect(675, 840, 120, 60))
         font.setBold(True)
         font.setWeight(75)
         self.camera_select_combo.setFont(font)
@@ -152,7 +154,7 @@ class UiDialog(object):
         
         # Create a button to connect to the selected camera
         self.camera_btn = QtWidgets.QPushButton(dialog)
-        self.camera_btn.setGeometry(QtCore.QRect(650, 760, 140, 60))
+        self.camera_btn.setGeometry(QtCore.QRect(800, 840, 150, 60))
         font = QtGui.QFont()
         font.setBold(True)
         font.setWeight(75)
@@ -163,12 +165,31 @@ class UiDialog(object):
 
         # Create a button to capture an image from the connected camera
         self.capture_btn = QtWidgets.QPushButton(dialog)
-        self.capture_btn.setGeometry(QtCore.QRect(810, 760, 110, 60))
+        self.capture_btn.setGeometry(QtCore.QRect(970, 840, 150, 60))
         font.setBold(True)
         font.setWeight(75)
         self.capture_btn.setFont(font)
         self.capture_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.capture_btn.setObjectName("CAPTURE")
         self.capture_btn.setText("Capture")
+        
+        # Center the dialog on the screen
+        self.center_dialog(dialog)
 
         QtCore.QMetaObject.connectSlotsByName(dialog)
+        
+    def center_dialog(self, dialog):
+        # Get the screen's geometry
+        screen_geometry = QtWidgets.QApplication.desktop().screenGeometry()
+        
+        # Get the geometry of the dialog
+        dialog_geometry = dialog.frameGeometry()
+        
+        # Calculate the center point
+        center_point = screen_geometry.center()
+        
+        # Move the dialog to the center of the screen
+        dialog_geometry.moveCenter(center_point)
+        
+        # Move the top-left point of the dialog to the new center
+        dialog.move(dialog_geometry.topLeft())
