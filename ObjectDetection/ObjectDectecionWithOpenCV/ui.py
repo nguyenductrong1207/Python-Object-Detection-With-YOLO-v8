@@ -82,7 +82,7 @@ class UiDialog(object):
         self.select_excel_btn.setFont(font)
         self.select_excel_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.select_excel_btn.setObjectName("Select Excel File")
-        self.select_excel_btn.setText("Select Excel File")    
+        self.select_excel_btn.setText("Select Excel")    
 
         # Create a button for uploading an image
         self.upload_img_btn = QtWidgets.QPushButton(dialog)
@@ -92,7 +92,7 @@ class UiDialog(object):
         self.upload_img_btn.setFont(font)
         self.upload_img_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.upload_img_btn.setObjectName("UPLOAD IMAGE")
-        self.upload_img_btn.setText("Upload Image")
+        self.upload_img_btn.setText("Upload")
         
         # Create a button for sending data to excel file
         self.send_btn = QtWidgets.QPushButton(dialog)
