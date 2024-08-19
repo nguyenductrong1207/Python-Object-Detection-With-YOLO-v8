@@ -10,14 +10,27 @@ from ultralytics import YOLO
 import openpyxl
 from openpyxl import load_workbook
 import xlwings as xw
-from ui import UiDialog  # Import the generated UI class
+from ui import LargeUiDialog, SmallUiDialog  # Import the generated UI class
 from videoThread import VideoThread  # Import the VideoThread class
 from hdbcli import dbapi
 
 class TehseenCode(QDialog):
     def __init__(self):
         super(TehseenCode, self).__init__()
-        self.ui = UiDialog()
+        
+        # Get screen resolution
+        screen_resolution = QDesktopWidget().screenGeometry()
+        screen_width = screen_resolution.width()
+        screen_height = screen_resolution.height()
+        
+        # Choose the UI based on screen resolution
+        if screen_width >= 1920 and screen_height >= 1080:
+            self.ui = LargeUiDialog()
+            print("UI Screen Resolution 1920 x 1080 and more")
+        else:
+            self.ui = SmallUiDialog()
+            print("UI Screen Resolution 1366 x 768")
+            
         self.ui.setup_ui(self)
         
         # Center the window on the screen
@@ -165,10 +178,15 @@ class TehseenCode(QDialog):
         
         # Run the YOLO model on the image
         results = self.model(source=image_path, imgsz=800, conf=0.55, save=False, show_labels=True)
+        
+        # Debug: Print the total number of objects detected by the model
+        num_detected_objects = results[0].boxes.shape[0] if len(results[0].boxes.shape) > 0 else 0
+        print(f"Total objects detected by the model: {num_detected_objects}")
+        
         detected_image_path = self.draw_bounding_boxes(image_path, results, output_dir)
         
         # Update the total detected objects counter
-        num_detected_objects = results[0].boxes.shape[0] if len(results[0].boxes.shape) > 0 else 0
+        # num_detected_objects = results[0].boxes.shape[0] if len(results[0].boxes.shape) > 0 else 0
         self.total_detected_objects += num_detected_objects
         self.SUMLIST.append(num_detected_objects)
         elements = " + ".join(map(str, self.SUMLIST))
@@ -189,11 +207,37 @@ class TehseenCode(QDialog):
         font_thickness = 2
         text_color = (0, 0, 255)
         bg_color = (0, 0, 0)
+            
+        # Extract bounding boxes and sort them
+        boxes = [(box.xyxy[0].cpu().numpy().astype(int), idx) for idx, box in enumerate(results[0].boxes)]
+        
+        # Debug: Print the number of boxes extracted before sorting
+        print(f"Total bounding boxes extracted: {len(boxes)}")
+        
+        row_threshold = height // 100  # This threshold may need to be adjusted
 
-        # Draw bounding boxes and labels for each detected object
-        for idx, box in enumerate(results[0].boxes):
-            x1, y1, x2, y2 = box.xyxy[0].cpu().numpy().astype(int)
-            label = f"{idx + 1}"
+        # First, sort by the y1 coordinate (top of the box)
+        boxes.sort(key=lambda b: b[0][1])
+
+        # Then, within each row group, sort by the x1 coordinate (left of the box)
+        sorted_boxes = []
+        current_row = []
+        last_y = boxes[0][0][1]
+        for box, idx in boxes:
+            if abs(box[1] - last_y) > row_threshold:
+                sorted_boxes.extend(sorted(current_row, key=lambda b: b[0][0]))  # Sort by x1 within the row
+                current_row = []
+                last_y = box[1]
+            current_row.append((box, idx))
+        sorted_boxes.extend(sorted(current_row, key=lambda b: b[0][0]))  # Sort the last row
+
+        # Debug: Print the number of labels after sorting
+        print(f"Total labels after sorting: {len(sorted_boxes)}")
+        
+        # Draw bounding boxes and labels for each detected object in the correct order
+        for new_idx, (box, original_idx) in enumerate(sorted_boxes, start=1):
+            x1, y1, x2, y2 = box
+            label = f"{new_idx}"
             text_size = cv2.getTextSize(label, font, font_scale, font_thickness)[0]
             text_x = x1 + 5
             text_y = y1 - 10 if y1 - 10 > 0 else y1 + text_size[1] + 10
@@ -202,6 +246,9 @@ class TehseenCode(QDialog):
             cv2.rectangle(img, (text_x - 5, text_y - text_size[1] - 5),
                           (text_x + text_size[0] + 5, text_y + 5), bg_color, -1)
             cv2.putText(img, label, (text_x, text_y), font, font_scale, text_color, font_thickness)
+            
+            # Debug: Print the bounding box coordinates and the label
+            print(f"Bounding box {new_idx}: x1={x1}, y1={y1}, x2={x2}, y2={y2}, label={label}")
 
         # Add a title showing the total number of detected objects
         num_boxes = results[0].boxes.shape[0] if len(results[0].boxes.shape) > 0 else 0
@@ -234,7 +281,17 @@ class TehseenCode(QDialog):
         # Convert the image data to QImage format
         convert_to_qt_format = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
         # Scale the image to fit the display area while keeping the aspect ratio
-        p = convert_to_qt_format.scaled(790, 610, QtCore.Qt.KeepAspectRatio)
+        # Get screen resolution
+        screen_resolution = QDesktopWidget().screenGeometry()
+        screen_width = screen_resolution.width()
+        screen_height = screen_resolution.height()
+        
+        if screen_width >= 1920 and screen_height >= 1080:
+            p = convert_to_qt_format.scaled(790, 610, QtCore.Qt.KeepAspectRatio)
+            print("Image Display 790 x 610")
+        else:
+            p = convert_to_qt_format.scaled(600, 450, QtCore.Qt.KeepAspectRatio)
+            print("Image Display 600 x 450")
         return p
 
     # Open a dialog to select an image for detection
@@ -335,9 +392,9 @@ class TehseenCode(QDialog):
     # Get the currently selected cell in the active Excel sheet and update the active sheet reference
     def get_selected_cell(self):
         # Check if the 'excel_wb' attribute exists
-        if not hasattr(self, 'excel_wb') or self.excel_wb is None:
-            QMessageBox.critical(self, "Error", "Don't have any opened Excel file")
-            return None
+        # if not hasattr(self, 'excel_wb') or self.excel_wb is None:
+        #     QMessageBox.critical(self, "Error", "Don't have any opened Excel file")
+        #     return None
         
         try:
             # Update the active sheet to the currently active one
@@ -352,7 +409,7 @@ class TehseenCode(QDialog):
             return address
         except Exception as e:
             print(f"Error getting selected cell: {e}")
-            QMessageBox.critical(self, "Error", "Error when getting selected cell") 
+            # QMessageBox.critical(self, "Error", "Error when getting selected cell") 
         
     # Undo the last operation and update the counter
     def undo_reset_counter(self):
