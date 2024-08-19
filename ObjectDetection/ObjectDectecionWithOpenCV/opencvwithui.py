@@ -20,7 +20,7 @@ class TehseenCode(QDialog):
         super(TehseenCode, self).__init__()
         
         # Load the UI from the .ui file
-        uic.loadUi("ui.ui", self)
+        uic.loadUi("uismall.ui", self)
         
         # Set the window flags programmatically
         self.setWindowFlags(QtCore.Qt.Window | QtCore.Qt.WindowMinimizeButtonHint | QtCore.Qt.WindowCloseButtonHint)
