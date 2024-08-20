@@ -10,27 +10,15 @@ from ultralytics import YOLO
 import openpyxl
 from openpyxl import load_workbook
 import xlwings as xw
-from ui import LargeUiDialog, SmallUiDialog  # Import the generated UI class
+from ui import UiDialog  # Import the generated UI class
 from videoThread import VideoThread  # Import the VideoThread class
 from hdbcli import dbapi
 
 class TehseenCode(QDialog):
     def __init__(self):
         super(TehseenCode, self).__init__()
-        
-        # Get screen resolution
-        screen_resolution = QDesktopWidget().screenGeometry()
-        screen_width = screen_resolution.width()
-        screen_height = screen_resolution.height()
-        
-        # Choose the UI based on screen resolution
-        if screen_width >= 1920 and screen_height >= 1080:
-            self.ui = LargeUiDialog()
-            print("UI Screen Resolution 1920 x 1080 and more")
-        else:
-            self.ui = SmallUiDialog()
-            print("UI Screen Resolution 1366 x 768")
-            
+         
+        self.ui = UiDialog()  
         self.ui.setup_ui(self)
         
         # Center the window on the screen
