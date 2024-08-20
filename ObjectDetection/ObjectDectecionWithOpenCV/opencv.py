@@ -23,9 +23,6 @@ class TehseenCode(QDialog):
         
         # Center the window on the screen
         self.center_window()
-        
-        # Fetch and populate SAP HANA tables
-        # self.populate_sap_hana_tables()
     
         # Initialization of variables
         self.logic = 0
@@ -170,7 +167,7 @@ class TehseenCode(QDialog):
         # Debug: Print the total number of objects detected by the model
         num_detected_objects = results[0].boxes.shape[0] if len(results[0].boxes.shape) > 0 else 0
         print(f"Total objects detected by the model: {num_detected_objects}")
-        
+
         detected_image_path = self.draw_bounding_boxes(image_path, results, output_dir)
         
         # Update the total detected objects counter
@@ -201,6 +198,11 @@ class TehseenCode(QDialog):
         
         # Debug: Print the number of boxes extracted before sorting
         print(f"Total bounding boxes extracted: {len(boxes)}")
+        
+        # Check if boxes list is empty
+        if not boxes:  
+            QMessageBox.information(self, "No Objects Detected", "No objects were detected in the image.", QMessageBox.Ok)
+            return image_path
         
         row_threshold = height // 100  # This threshold may need to be adjusted
 
@@ -316,9 +318,6 @@ class TehseenCode(QDialog):
         
         # Send total_detected_objects to specfic excel cell automation 
         self.send_data_to_excel()
-        
-        # Send total_detected_objects to selected SAP HANA table
-        # self.send_data_to_sap_hana()
         
     # Capture the current frame from the camera and save it as an image
     def capture_new_image(self):
@@ -452,65 +451,6 @@ class TehseenCode(QDialog):
             if self.thread is not None:
                 self.thread.stop()
             QApplication.quit()
-            
-    ########################################################################
-    
-    # SAP HANA TRANFER DATA
-    # def populate_sap_hana_tables(self):
-    #     tables = self.get_sap_hana_tables()
-    #     self.ui.table_select_combo.clear()
-    #     self.ui.table_select_combo.addItems(tables)
-    
-    # def connect_to_sap_hana(self):
-    #     try:
-    #         connection = dbapi.connect(
-    #             address="your_hana_host",
-    #             port=30015,  # Default SAP HANA port
-    #             user="your_username",
-    #             password="your_password"
-    #         )
-    #         print("Connected to SAP HANA")
-    #         return connection
-    #     except dbapi.Error as e:
-    #         print(f"Error connecting to SAP HANA: {e}")
-    #         return None
-    
-    # def get_sap_hana_tables(self):
-    #     connection = self.connect_to_sap_hana()
-    #     if connection:
-    #         try:
-    #             cursor = connection.cursor()
-    #             cursor.execute("SELECT TABLE_NAME FROM SYS.TABLES WHERE SCHEMA_NAME = 'YOUR_SCHEMA_NAME'")
-    #             tables = cursor.fetchall()
-    #             return [table[0] for table in tables]  # Return a list of table names
-    #         except dbapi.Error as e:
-    #             print(f"Error fetching tables: {e}")
-    #             return []
-    #         finally:
-    #             cursor.close()
-    #             connection.close()
-    #     return []
-
-    # def send_data_to_sap_hana(self):
-    #     table_name = self.ui.table_select_combo.currentText()  # Get selected table from combo box
-    #     column_name = "YOUR_COLUMN"  # Change this to the correct column name
-
-    #     connection = self.connect_to_sap_hana()
-    #     if connection:
-    #         try:
-    #             cursor = connection.cursor()
-    #             query = f"""
-    #             INSERT INTO {table_name} ({column_name}, TIMESTAMP)
-    #             VALUES (?, CURRENT_TIMESTAMP)
-    #             """
-    #             cursor.execute(query, (self.total_detected_objects,))
-    #             connection.commit()
-    #             print(f"Data successfully inserted into {table_name}.")
-    #         except dbapi.Error as e:
-    #             print(f"Error executing SQL query: {e}")
-    #         finally:
-    #             cursor.close()
-    #             connection.close()
     
 if __name__ == "__main__":
     app = QApplication(sys.argv)

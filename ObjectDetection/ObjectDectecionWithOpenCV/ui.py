@@ -12,6 +12,12 @@ class UiDialog(object):
             QtCore.Qt.WindowCloseButtonHint
         )
         
+        # Load and resize the logo image
+        logo_pixmap = QtGui.QPixmap("logo.webp") 
+        logo_pixmap = logo_pixmap.scaled(50, 50, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+        logo_icon = QtGui.QIcon(logo_pixmap)
+        dialog.setWindowIcon(logo_icon)
+        
         dialog.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
 
         # Get screen resolution
@@ -131,12 +137,6 @@ class UiDialog(object):
                 font-size: 22px;
                 color: red;
             """)
-            
-        # Load and resize the logo image
-        logo_pixmap = QtGui.QPixmap("logo.webp") 
-        logo_pixmap = logo_pixmap.scaled(50, 50, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
-        logo_icon = QtGui.QIcon(logo_pixmap)
-        dialog.setWindowIcon(logo_icon)
                    
         # Create a frame to contain the image labels and other elements
         self.frame_right = QtWidgets.QFrame(dialog)
