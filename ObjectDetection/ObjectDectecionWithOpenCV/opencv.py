@@ -51,6 +51,7 @@ class TehseenCode(QDialog):
         
         self.ui.camera_btn.clicked.connect(self.start_video)
         self.ui.capture_btn.clicked.connect(self.capture_new_image)
+        self.ui.start_btn.clicked.connect(self.detect_latest_image)
         
         # Setup the layout for displaying images
         layout = QHBoxLayout()
@@ -314,10 +315,11 @@ class TehseenCode(QDialog):
     # Detects objects, displays the result and send the total_detected_objects to specific excel cell
     def detect_image_and_display(self, image_path):
         detected_image_path = self.detect_image(image_path)
-        self.update_processed_image(detected_image_path)  
         
         # Send total_detected_objects to specfic excel cell automation 
         self.send_data_to_excel()
+        
+        self.update_processed_image(detected_image_path)  
         
     # Capture the current frame from the camera and save it as an image
     def capture_new_image(self):
@@ -330,6 +332,43 @@ class TehseenCode(QDialog):
             self.detect_image_and_display(img_path)
         else:
             QMessageBox.critical(self, "Error", "Please connect to a camera to capture")
+            
+    def detect_latest_image(self):
+        img_folder = r"D:\Github\Python-Object-Detection-With-YOLO-v8\ObjectDetection\ObjectDectecionWithOpenCV\img"
+
+        try:
+            # Get the list of all files in the img folder
+            images = [os.path.join(self.img_folder, f) for f in os.listdir(img_folder) if os.path.isfile(os.path.join(img_folder, f))]
+            
+            if not images:
+                # Show a message box if no images are found in the folder
+                QMessageBox.warning(self, "No Images", "No images found in the 'img' folder.")
+                return
+
+            # Stop the video thread
+            if self.thread is not None:
+                self.thread.stop()   
+                self.thread = None 
+                
+            # Find the latest image by modification time
+            latest_image = max(images, key=os.path.getmtime)
+            
+            try:
+                # Use QTimer.singleShot with a lambda or partial to delay image display
+                QTimer.singleShot(100, lambda: self.display_image(latest_image, self.ui.img_label))  
+            except Exception as e:
+                print(f"Fail to display latest image: {e}")
+         
+            # Display and process the latest image
+            self.detect_image_and_display(latest_image)
+            
+            # Extract and print the image name
+            image_name = os.path.basename(latest_image)
+            print(f"Latest image detected: {image_name}")
+
+        except Exception as e:
+            print(f"Error detecting the latest image: {e}")
+            QMessageBox.critical(self, "Error", f"Failed to detect the latest image: {str(e)}")
               
     # Open a dialog to select an Excel file
     def upload_excel_file(self):
@@ -361,7 +400,7 @@ class TehseenCode(QDialog):
     def send_data_to_excel(self):
         try:
             # Add a small delay to ensure Excel has enough time to register the cell selection
-            QTimer.singleShot(100, self.write_data_to_excel)
+            QTimer.singleShot(300, self.write_data_to_excel)
         except Exception as e:
             print(f"Error writing data to Excel: {e}")
             
