@@ -259,5 +259,15 @@ class UiDialog(object):
         self.capture_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
         self.capture_btn.setObjectName("CAPTURE")
         self.capture_btn.setText("Capture")
+        
+        # Create a button to detecting the latest image in the "img" folder
+        self.start_btn = QtWidgets.QPushButton(dialog)
+        self.start_btn.setGeometry(QtCore.QRect(int(screenWidth / 2 - line4W / 2) + (line4W + margin) * 2, line4Y, line4W, line4H))
+        font.setBold(True)
+        font.setWeight(75)
+        self.start_btn.setFont(font)
+        self.start_btn.setCursor(QtGui.QCursor(QtCore.Qt.PointingHandCursor))
+        self.start_btn.setObjectName("LASTESTIMAGE")
+        self.start_btn.setText("Latest Image")
 
         QtCore.QMetaObject.connectSlotsByName(dialog)

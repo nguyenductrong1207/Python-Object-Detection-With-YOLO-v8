@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- UI for Screen Resolution 1366 x 768 -->
 <ui version="4.0">
  <class>Dialog</class>
  <widget class="QDialog" name="Dialog">
