@@ -13,6 +13,7 @@ import xlwings as xw
 from ui import UiDialog  # Import the generated UI class
 from videoThread import VideoThread  # Import the VideoThread class
 from hdbcli import dbapi
+import numpy as np
 
 class TehseenCode(QDialog):
     def __init__(self):
@@ -169,17 +170,102 @@ class TehseenCode(QDialog):
         num_detected_objects = results[0].boxes.shape[0] if len(results[0].boxes.shape) > 0 else 0
         print(f"Total objects detected by the model: {num_detected_objects}")
 
+        # Draw bounding boxes and get the path of the annotated image
         detected_image_path = self.draw_bounding_boxes(image_path, results, output_dir)
         
         # Update the total detected objects counter
         # num_detected_objects = results[0].boxes.shape[0] if len(results[0].boxes.shape) > 0 else 0
-        self.total_detected_objects += num_detected_objects
-        self.SUMLIST.append(num_detected_objects)
+        # self.total_detected_objects += num_detected_objects
+        # self.SUMLIST.append(num_detected_objects)
         elements = " + ".join(map(str, self.SUMLIST))
         self.ui.text_browser.setText(f'Total: {elements} = {self.total_detected_objects}')
         self.ui.total_objects_label.setText(f'Total Objects: {self.total_detected_objects}')
+        
         return detected_image_path
 
+    # # Draw bounding boxes on the detected objects in the image
+    # def draw_bounding_boxes(self, image_path, results, output_dir):
+    #     img = cv2.imread(image_path)
+    #     if img is None:
+    #         print(f"Error: Unable to open image file {image_path}")
+    #         return image_path
+
+    #     height, width, _ = img.shape
+    #     font = cv2.FONT_HERSHEY_SIMPLEX
+    #     font_scale = width / 1500
+    #     font_thickness = 2
+    #     text_color = (0, 0, 255)
+    #     bg_color = (0, 0, 0)
+            
+    #     # Extract bounding boxes and sort them
+    #     boxes = [(box.xyxy[0].cpu().numpy().astype(int), idx) for idx, box in enumerate(results[0].boxes)]
+        
+    #     # Debug: Print the number of boxes extracted before sorting
+    #     print(f"Total bounding boxes extracted: {len(boxes)}")
+        
+    #     # Check if boxes list is empty
+    #     if not boxes:  
+    #         QMessageBox.information(self, "No Objects Detected", "No objects were detected in the image.", QMessageBox.Ok)
+    #         return image_path
+        
+    #     row_threshold = height // 100  # This threshold may need to be adjusted
+
+    #     # First, sort by the y1 coordinate (top of the box)
+    #     boxes.sort(key=lambda b: b[0][1])
+
+    #     # Then, within each row group, sort by the x1 coordinate (left of the box)
+    #     sorted_boxes = []
+    #     current_row = []
+    #     last_y = boxes[0][0][1]
+    #     for box, idx in boxes:
+    #         if abs(box[1] - last_y) > row_threshold:
+    #             sorted_boxes.extend(sorted(current_row, key=lambda b: b[0][0]))  # Sort by x1 within the row
+    #             current_row = []
+    #             last_y = box[1]
+    #         current_row.append((box, idx))
+    #     sorted_boxes.extend(sorted(current_row, key=lambda b: b[0][0]))  # Sort the last row
+
+    #     # Debug: Print the number of labels after sorting
+    #     print(f"Total labels after sorting: {len(sorted_boxes)}")
+        
+    #     # Draw bounding boxes and labels for each detected object in the correct order
+    #     for new_idx, (box, original_idx) in enumerate(sorted_boxes, start=1):
+    #         x1, y1, x2, y2 = box
+    #         label = f"{new_idx}"
+    #         text_size = cv2.getTextSize(label, font, font_scale, font_thickness)[0]
+    #         text_x = x1 + 5
+    #         text_y = y1 - 10 if y1 - 10 > 0 else y1 + text_size[1] + 10
+
+    #         cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
+    #         cv2.rectangle(img, (text_x - 5, text_y - text_size[1] - 5),
+    #                       (text_x + text_size[0] + 5, text_y + 5), bg_color, -1)
+    #         cv2.putText(img, label, (text_x, text_y), font, font_scale, text_color, font_thickness)
+            
+    #         # Debug: Print the bounding box coordinates and the label
+    #         print(f"Bounding box {new_idx}: x1={x1}, y1={y1}, x2={x2}, y2={y2}, label={label}")
+
+    #     # Add a title showing the total number of detected objects
+    #     num_boxes = results[0].boxes.shape[0] if len(results[0].boxes.shape) > 0 else 0
+    #     font_scale = width / 800
+    #     font_thickness_title = 4
+    #     title = f"Detected {num_boxes} objects"
+    #     text_size = cv2.getTextSize(title, font, font_scale, font_thickness_title)[0]
+    #     text_x = (width - text_size[0]) - 20
+    #     text_y = text_size[1] + 10
+    #     text_color = (255, 255, 255)
+    #     bg_color = (0, 0, 0)
+    #     cv2.rectangle(img, (text_x - 10, text_y - text_size[1] - 10), 
+    #                   (text_x + text_size[0] + 10, text_y + 10), bg_color, -1)
+    #     cv2.putText(img, title, (text_x, text_y), font, font_scale, text_color, font_thickness)
+
+    #     # Save the annotated image and update the UI
+    #     output_filename = f'annotated_{os.path.basename(image_path)}'
+    #     output_path = os.path.join(output_dir, output_filename)
+    #     cv2.imwrite(output_path, img)
+        
+    #     print(f"Annotated image saved at {output_path}")
+    #     return output_path
+    
     # Draw bounding boxes on the detected objects in the image
     def draw_bounding_boxes(self, image_path, results, output_dir):
         img = cv2.imread(image_path)
@@ -194,27 +280,40 @@ class TehseenCode(QDialog):
         text_color = (0, 0, 255)
         bg_color = (0, 0, 0)
             
-        # Extract bounding boxes and sort them
+        # Extract bounding boxes and associated labels
         boxes = [(box.xyxy[0].cpu().numpy().astype(int), idx) for idx, box in enumerate(results[0].boxes)]
         
-        # Debug: Print the number of boxes extracted before sorting
+        # Debug: Print the total number of boxes extracted
         print(f"Total bounding boxes extracted: {len(boxes)}")
         
-        # Check if boxes list is empty
-        if not boxes:  
+        if not boxes:  # Check if boxes list is empty
             QMessageBox.information(self, "No Objects Detected", "No objects were detected in the image.", QMessageBox.Ok)
             return image_path
+
+        # Check for and remove duplicate bounding boxes
+        unique_boxes = []
+        for box, idx in boxes:
+            is_duplicate = False
+            for unique_box, _ in unique_boxes:
+                # Simple duplication check: same coordinates or very close (adjust threshold as needed)
+                if np.allclose(box, unique_box, atol=5):  
+                    is_duplicate = True
+                    print(f"Duplicate bounding box found at index {idx} with coordinates {box}")
+                    break
+            if not is_duplicate:
+                unique_boxes.append((box, idx))
         
-        row_threshold = height // 100  # This threshold may need to be adjusted
+        # Debug: Print the number of unique boxes after filtering duplicates
+        print(f"Total unique bounding boxes: {len(unique_boxes)}")
+        
+        # Sorting bounding boxes
+        row_threshold = height // 100  # Adjust this threshold as needed
+        unique_boxes.sort(key=lambda b: b[0][1])  # Sort by y1
 
-        # First, sort by the y1 coordinate (top of the box)
-        boxes.sort(key=lambda b: b[0][1])
-
-        # Then, within each row group, sort by the x1 coordinate (left of the box)
         sorted_boxes = []
         current_row = []
-        last_y = boxes[0][0][1]
-        for box, idx in boxes:
+        last_y = unique_boxes[0][0][1]
+        for box, idx in unique_boxes:
             if abs(box[1] - last_y) > row_threshold:
                 sorted_boxes.extend(sorted(current_row, key=lambda b: b[0][0]))  # Sort by x1 within the row
                 current_row = []
@@ -222,11 +321,12 @@ class TehseenCode(QDialog):
             current_row.append((box, idx))
         sorted_boxes.extend(sorted(current_row, key=lambda b: b[0][0]))  # Sort the last row
 
-        # Debug: Print the number of labels after sorting
-        print(f"Total labels after sorting: {len(sorted_boxes)}")
-        
-        # Draw bounding boxes and labels for each detected object in the correct order
+        # Debug: Print the sorted bounding boxes with their new labels
+        print("Sorted bounding boxes and their new labels:")
         for new_idx, (box, original_idx) in enumerate(sorted_boxes, start=1):
+            print(f"Original Index: {original_idx}, New Label: {new_idx}, Coordinates: {box}")
+            
+            # Drawing the bounding box and label on the image
             x1, y1, x2, y2 = box
             label = f"{new_idx}"
             text_size = cv2.getTextSize(label, font, font_scale, font_thickness)[0]
@@ -235,17 +335,21 @@ class TehseenCode(QDialog):
 
             cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
             cv2.rectangle(img, (text_x - 5, text_y - text_size[1] - 5),
-                          (text_x + text_size[0] + 5, text_y + 5), bg_color, -1)
+                        (text_x + text_size[0] + 5, text_y + 5), bg_color, -1)
             cv2.putText(img, label, (text_x, text_y), font, font_scale, text_color, font_thickness)
             
             # Debug: Print the bounding box coordinates and the label
             print(f"Bounding box {new_idx}: x1={x1}, y1={y1}, x2={x2}, y2={y2}, label={label}")
 
+        # Update total detected objects with the count of unique bounding boxes
+        self.total_detected_objects += len(unique_boxes)
+        self.SUMLIST.append(len(unique_boxes))
+        
         # Add a title showing the total number of detected objects
-        num_boxes = results[0].boxes.shape[0] if len(results[0].boxes.shape) > 0 else 0
+        # num_boxes = results[0].boxes.shape[0] if len(results[0].boxes.shape) > 0 else 0
         font_scale = width / 800
         font_thickness_title = 4
-        title = f"Detected {num_boxes} objects"
+        title = f"Detected {len(unique_boxes)} objects"
         text_size = cv2.getTextSize(title, font, font_scale, font_thickness_title)[0]
         text_x = (width - text_size[0]) - 20
         text_y = text_size[1] + 10
@@ -442,12 +546,14 @@ class TehseenCode(QDialog):
         reply = QMessageBox.question(self, 'Confirm Undo', 'Are you sure you want to undo the results?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
             try:
-                remove_lastcount = self.SUMLIST.pop()
-                SUMLIST = remove_lastcount
+                removed_count  = self.SUMLIST.pop()
+                self.total_detected_objects -= removed_count
+                
                 elements = " + ".join(map(str, self.SUMLIST))
-                self.total_detected_objects = sum(self.SUMLIST)
+                # self.total_detected_objects = sum(self.SUMLIST)
                 self.ui.text_browser.setText(f'Total Objects: {elements} = {self.total_detected_objects}')
                 self.ui.total_objects_label.setText(f'Total Objects: {self.total_detected_objects}')
+                
                 self.send_data_to_excel()
             except:
                 QMessageBox.critical(self, "Error", "Can Not Undo") 
