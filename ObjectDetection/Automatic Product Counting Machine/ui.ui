@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- UI for Screen Resolution 1366 x 768 -->
+<ui version="4.0">
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1300</width>
+    <height>650</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>PNJP Automatic Product Counting Machine</string>
+  </property>
+  <property name="cursor">
+   <cursorShape>PointingHandCursor</cursorShape>
+  </property>
+  <widget class="QTextBrowser" name="textBrowser">
+   <property name="geometry">
+    <rect>
+     <x>70</x>
+     <y>10</y>
+     <width>960</width>
+     <height>40</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">font-weight: bold;</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignCenter</set>
+   </property>
+   <property name="cursor">
+    <cursorShape>PointingHandCursor</cursorShape>
+   </property>
+  </widget>
+  <widget class="QLabel" name="totalObjectsLabel">
+   <property name="geometry">
+    <rect>
+     <x>1000</x>
+     <y>10</y>
+     <width>300</width>
+     <height>40</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Total Objects: 0</string>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">font-weight: bold; font-size: 22px; color: red;</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignCenter</set>
+   </property>
+   <property name="cursor">
+    <cursorShape>PointingHandCursor</cursorShape>
+   </property>
+  </widget>
+  <widget class="QFrame" name="frameRight">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>60</y>
+     <width>1260</width>
+     <height>440</height>
+    </rect>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::Box</enum>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Raised</enum>
+   </property>
+   <property name="lineWidth">
+    <number>1</number>
+   </property>
+  </widget>
+  <widget class="QLabel" name="imgLabel">
+   <property name="geometry">
+    <rect>
+     <x>50</x>
+     <y>0</y>
+     <width>550</width>
+     <height>500</height>
+    </rect>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::Box</enum>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Raised</enum>
+   </property>
+   <property name="lineWidth">
+    <number>4</number>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignCenter</set>
+   </property>
+  </widget>
+  <widget class="QLabel" name="processedImgLabel">
+   <property name="geometry">
+    <rect>
+     <x>50</x>
+     <y>0</y>
+     <width>550</width>
+     <height>500</height>
+    </rect>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::Box</enum>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Raised</enum>
+   </property>
+   <property name="lineWidth">
+    <number>4</number>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignCenter</set>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="selectExcelBtn">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>510</y>
+     <width>100</width>
+     <height>35</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Select Excel</string>
+   </property>
+   <property name="font">
+    <font>
+     <bold>true</bold>
+     <weight>75</weight>
+    </font>
+   </property>
+   <property name="cursor">
+    <cursorShape>PointingHandCursor</cursorShape>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="uploadImgBtn">
+   <property name="geometry">
+    <rect>
+     <x>135</x>
+     <y>510</y>
+     <width>100</width>
+     <height>35</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Upload</string>
+   </property>
+   <property name="font">
+    <font>
+     <bold>true</bold>
+     <weight>75</weight>
+    </font>
+   </property>
+   <property name="cursor">
+    <cursorShape>PointingHandCursor</cursorShape>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="sendBtn">
+   <property name="geometry">
+    <rect>
+     <x>250</x>
+     <y>510</y>
+     <width>100</width>
+     <height>35</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Send</string>
+   </property>
+   <property name="font">
+    <font>
+     <bold>true</bold>
+     <weight>75</weight>
+    </font>
+   </property>
+   <property name="cursor">
+    <cursorShape>PointingHandCursor</cursorShape>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="undoBtn">
+   <property name="geometry">
+    <rect>
+     <x>365</x>
+     <y>510</y>
+     <width>100</width>
+     <height>35</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Undo</string>
+   </property>
+   <property name="font">
+    <font>
+     <bold>true</bold>
+     <weight>75</weight>
+    </font>
+   </property>
+   <property name="cursor">
+    <cursorShape>PointingHandCursor</cursorShape>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="reloadBtn">
+   <property name="geometry">
+    <rect>
+     <x>1065</x>
+     <y>510</y>
+     <width>100</width>
+     <height>35</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Reload</string>
+   </property>
+   <property name="font">
+    <font>
+     <bold>true</bold>
+     <weight>75</weight>
+    </font>
+   </property>
+   <property name="cursor">
+    <cursorShape>PointingHandCursor</cursorShape>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="quitBtn">
+   <property name="geometry">
+    <rect>
+     <x>1180</x>
+     <y>510</y>
+     <width>100</width>
+     <height>35</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Quit</string>
+   </property>
+   <property name="font">
+    <font>
+     <bold>true</bold>
+     <weight>75</weight>
+    </font>
+   </property>
+   <property name="cursor">
+    <cursorShape>PointingHandCursor</cursorShape>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="cameraSelectCombo">
+   <property name="geometry">
+    <rect>
+     <x>450</x>
+     <y>570</y>
+     <width>120</width>
+     <height>40</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <bold>true</bold>
+     <weight>75</weight>
+    </font>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="cameraBtn">
+   <property name="geometry">
+    <rect>
+     <x>575</x>
+     <y>570</y>
+     <width>150</width>
+     <height>40</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Connect Camera</string>
+   </property>
+   <property name="font">
+    <font>
+     <bold>true</bold>
+     <weight>75</weight>
+    </font>
+   </property>
+   <property name="cursor">
+    <cursorShape>PointingHandCursor</cursorShape>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="captureBtn">
+   <property name="geometry">
+    <rect>
+     <x>740</x>
+     <y>570</y>
+     <width>150</width>
+     <height>40</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Capture</string>
+   </property>
+   <property name="font">
+    <font>
+     <bold>true</bold>
+     <weight>75</weight>
+    </font>
+   </property>
+   <property name="cursor">
+    <cursorShape>PointingHandCursor</cursorShape>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="detectLastestImgBtn">
+    <property name="geometry">
+     <rect>
+      <x>905</x>
+      <y>570</y>
+      <width>150</width>
+      <height>40</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Latest Image</string>
+    </property>
+    <property name="font">
+     <font>
+      <bold>true</bold>
+      <weight>75</weight>
+     </font>
+    </property>
+    <property name="cursor">
+     <cursorShape>PointingHandCursor</cursorShape>
+    </property>
+   </widget>
+ </widget>
+ <connections/>
+ <resources/>
+ <connections/>
+</ui>

@@ -1,0 +1,29 @@
+*  Install the necessary dependencies for the project
+=> pip install -r requirements.txt 
+   or 
+   pip install opencv-python PyQt5 ultralytics openpyxl xlwings numpy hdbcli
+
+*  Từng File Trong Dự Án
+- opencv.py là file main dùng để thiết lập ứng dụng cho phép người dùng kết nối với camera, chụp hình, phát hiện đối tượng trong hình ảnh bằng mô hình YOLO, và xử lý dữ liệu trong Excel
+  Note: 
+	+ hàm detect_cameras() dung để phát hiện các camera kết nối và thêm vào menu dropdown (em đang set 5 camera)
+
+	+ hàm draw_bounding_boxes() đang comment là hàm cũ, chưa xử lý lỗi detect 1 ra 2 objects trùng vị trí và cập nhật total_detected_objects từ tổng objects đếm được bao gồm cả các objects trùng nhau 
+	+ hàm draw_bounding_boxes() mới sẽ xử lý thêm phần kiểm tra, xóa những bounding boxes trùng nhau và thêm các unique_boxes vào 1 list riêng. Cập nhật total_detected_objects sẽ được tính từ tổng các unique_boxes
+
+	+ hàm get_latest_modified_train_folder() và setup_yolo_model() lấy thư mục đào tạo mới nhất từ thư mục chứa mô hình YOLO (em giữ nguyên code của anh)
+
+	+ hàm detect_latest_image() đang sử dụng đường dẫn cố định tới folder img để lấy ảnh mới nhất detect. Nên anh nhớ đổi lại đường dẫn theo máy anh nha :>>>
+
+
+- ui.py dùng để tạo giao diện cho người dùng. Bao gồm 2 phần responsive: 
+  + Màn hình 1920 x 1080 trở lên thì kích thước app là 1750 x 930 
+  + Màn hình 1920 x 1080 trở xuống thì giao diện được set riêng cho màn hình 1366 x 768 với kích thước app là 1300 x 650
+
+- videoThread.py dùng để tạo lớp VideoThread định nghĩa các chức năng liên quan đến việc quản lý và xử lý video từ camera 
+
+
+* Em có code thêm file ui.ui với opencvWithQtDesigner.py để sau này anh xài với QtDesigner 
+
+  - ui.ui giao diện chỉ được set up riêng cho màn hình 1366 x 768 với kích thước app là 1300 x 650
+  - opencvWithQtDesigner.py là file main để kết nối với ui.ui (chỉ khác opencv.py ở tên biến và cách gọi các biến từ file ui)
