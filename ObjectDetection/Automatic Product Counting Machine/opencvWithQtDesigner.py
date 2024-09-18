@@ -13,6 +13,7 @@ import xlwings as xw
 from videoThread import VideoThread  # Import the VideoThread class
 from hdbcli import dbapi
 import numpy as np
+from pypylon import pylon
 
 class TehseenCode(QDialog):
     def __init__(self):
@@ -54,6 +55,10 @@ class TehseenCode(QDialog):
         self.textBrowser.setText('Press "Camera" to connect with camera')
         self.processedImgLabel.setScaledContents(True)
         
+        # Variables to manage camera state
+        self.is_basler_camera = False
+        self.basler_camera = None
+        
         # Connect UI buttons to their respective functions
         self.selectExcelBtn.clicked.connect(self.upload_excel_file)
         self.uploadImgBtn.clicked.connect(self.upload_image)
@@ -62,9 +67,12 @@ class TehseenCode(QDialog):
         self.reloadBtn.clicked.connect(self.reload_app)
         self.quitBtn.clicked.connect(self.quit_app)
         
-        self.cameraBtn.clicked.connect(self.start_video)
+        self.cameraBtn.clicked.connect(self.start_camera)
+        
         self.captureBtn.clicked.connect(self.capture_new_image)
         self.detectLastestImgBtn.clicked.connect(self.detect_latest_image)
+        
+        self.baslerCameraBtn.clicked.connect(self.capture_from_basler_camera)
         
         # Setup the layout for displaying images
         layout = QHBoxLayout()
@@ -119,8 +127,14 @@ class TehseenCode(QDialog):
       
     # Start the video stream using the selected camera    
     @pyqtSlot()
-    def start_video(self):
-        camera_index = self.get_selected_camera_index()
+    def start_video(self, camera_index):
+        # camera_index = self.get_selected_camera_index()
+        
+        # Stop the current video thread if it's running
+        if self.thread is not None:
+            self.thread.stop()
+        
+        # Initialize the video thread with the selected camera index
         self.thread = VideoThread(camera_index)
         self.thread.change_pixmap_signal.connect(self.update_image)
         self.thread.frame_captured_signal.connect(self.frameCaptured)
@@ -135,13 +149,73 @@ class TehseenCode(QDialog):
     @pyqtSlot()
     def frameCaptured(self):
         self.textBrowser.setText('Image captured')
-        
+    
+    # Start the Basler Camera using the selected camera     
+    def start_camera(self):
+        selected_camera = self.cameraSelectCombo.currentText()
+
+        if selected_camera == "Basler Camera":
+            self.is_basler_camera = True
+            self.connect_basler_camera()
+        else:
+            self.is_basler_camera = False
+            camera_index = self.cameraSelectCombo.currentIndex() - 1
+            self.start_video(camera_index)
+    
+    # Connect to the Basler camera with camera IP       
+    def connect_basler_camera(self):
+        try:
+            # Connect to the Basler camera
+            self.basler_camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateDevice(pylon.DeviceInfo().SetIpAddress("192.168.3.3")))
+            self.basler_camera.Open()
+
+            # Set camera settings
+            max_width = self.basler_camera.Width.GetMax()
+            max_height = self.basler_camera.Height.GetMax()
+            self.basler_camera.Width.SetValue(max_width)
+            self.basler_camera.Height.SetValue(max_height)
+            self.basler_camera.Gain.SetValue(10)
+            self.basler_camera.ExposureTime.SetValue(5000)
+
+            self.textBrowser.setText("Basler Camera connected. Click 'Capture' to capture an image.")
+        except Exception as e:
+            QMessageBox.critical(self, "Basler Camera Error", f"Failed to connect to Basler Camera: {str(e)}")
+            self.textBrowser.setText("Failed to connect to Basler Camera.")
+    
+    # Handle the Basler camera capture    
+    def capture_from_basler_camera(self):
+        if self.is_basler_camera and self.basler_camera is not None:
+            try:
+                # Capture the image from the Basler camera
+                grab_result = self.basler_camera.GrabOne(1000)
+                if grab_result.GrabSucceeded():
+                    image = grab_result.Array
+
+                    # Define the path for the image
+                    img_path = os.path.join(self.img_folder, f"basler_image{self.value}.png")
+                
+                    # Save the image captured from Basler camera
+                    cv2.imwrite(img_path, image)
+                    self.value += 1  # Increment image counter
+
+                    # Now that the image is saved, detect and display the image
+                    self.detect_image_and_display(img_path)  # Detect objects and display the image
+
+                else:
+                    QMessageBox.critical(self, "Capture Failed", "Failed to capture image from Basler camera.")
+
+            except Exception as e:
+                QMessageBox.critical(self, "Camera Error", f"Error capturing image from Basler camera: {str(e)}")
+
+        else:
+            QMessageBox.warning(self, "Camera Not Connected", "Basler Camera is not connected. Please connect it first.")   
+    
     # Detect connected cameras and populate the dropdown menu
     def detect_cameras(self):
         # Detect connected cameras and populate the dropdown
         camera_indices = []
-        # Check the first 5 indices (adjust as needed)
-        for i in range(5):  
+        # Check the first 4 indices (adjust as needed)
+        for i in range(4):  
             cap = cv2.VideoCapture(i)
             
             if cap is not None and cap.isOpened():
@@ -152,6 +226,10 @@ class TehseenCode(QDialog):
             self.cameraSelectCombo.addItem("No Cameras Detected")
         else:
             self.cameraSelectCombo.clear()
+            
+            # Add Basler Camera as the first option in cameraSelectCombo
+            self.cameraSelectCombo.addItem("Basler Camera")
+            
             for index in camera_indices:
                 self.cameraSelectCombo.addItem(f"Camera {index}")
         
