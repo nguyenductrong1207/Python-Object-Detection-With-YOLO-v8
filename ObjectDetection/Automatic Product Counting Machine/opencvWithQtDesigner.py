@@ -14,6 +14,7 @@ from videoThread import VideoThread  # Import the VideoThread class
 from hdbcli import dbapi
 import numpy as np
 from pypylon import pylon
+from baslerVideoThread import BaslerVideoThread  # Import the Basler video thread class
 
 class TehseenCode(QDialog):
     def __init__(self):
@@ -21,7 +22,7 @@ class TehseenCode(QDialog):
          
         # Load the UI from the .ui file
         uic.loadUi('ui.ui', self)
-        
+
         # Set window flags
         self.setWindowFlags(
             QtCore.Qt.Window |
@@ -48,16 +49,17 @@ class TehseenCode(QDialog):
         self.total_detected_objects = 0
         self.SUMLIST = [] # List to store the count of detected objects
         
+        # Initialize basler camera attributes
+        self.basler_video_thread = None
+        self.basler_camera = None
+        self.is_basler_camera = False
+        
         # Detect cameras and populate the dropdown menu with available cameras
         self.detect_cameras()
         
         # Set initial text and UI settings
         self.textBrowser.setText('Press "Camera" to connect with camera')
         self.processedImgLabel.setScaledContents(True)
-        
-        # Variables to manage camera state
-        self.is_basler_camera = False
-        self.basler_camera = None
         
         # Connect UI buttons to their respective functions
         self.selectExcelBtn.clicked.connect(self.upload_excel_file)
@@ -149,18 +151,42 @@ class TehseenCode(QDialog):
     @pyqtSlot()
     def frameCaptured(self):
         self.textBrowser.setText('Image captured')
+        
+    def stop_all_cameras(self):
+        # Stop the video thread if a regular camera (webcam) is running
+        if self.thread is not None:
+            if self.thread.isRunning():
+                self.thread.stop()
+            self.thread = None
+
+        # Stop the Basler camera thread if it is running
+        if self.basler_video_thread is not None:
+            if self.basler_video_thread.isRunning():
+                self.basler_video_thread.stop()
+            self.basler_video_thread = None
+
+        # Close the Basler camera connection if it's open
+        if self.basler_camera is not None:
+            if self.basler_camera.IsOpen():
+                self.basler_camera.Close()
+            self.basler_camera = None
     
     # Start the Basler Camera using the selected camera     
     def start_camera(self):
         selected_camera = self.cameraSelectCombo.currentText()
+        
+        # Stop the existing camera (webcam or Basler) before switching
+        self.stop_all_cameras()
 
         if selected_camera == "Basler Camera":
             self.is_basler_camera = True
             self.connect_basler_camera()
         else:
             self.is_basler_camera = False
+            
+            # Index - 1 because Basler Camera is the first option
             camera_index = self.cameraSelectCombo.currentIndex() - 1
-            self.start_video(camera_index)
+            self.start_video(camera_index) # Start regular webcam stream
     
     # Connect to the Basler camera with camera IP       
     def connect_basler_camera(self):
@@ -176,12 +202,19 @@ class TehseenCode(QDialog):
             self.basler_camera.Height.SetValue(max_height)
             self.basler_camera.Gain.SetValue(10)
             self.basler_camera.ExposureTime.SetValue(5000)
+            
+            # Start the Basler video thread to display the video feed in real-time
+            self.basler_video_thread = BaslerVideoThread(self.basler_camera)
+            self.basler_video_thread.change_pixmap_signal.connect(self.update_image)
+            self.basler_video_thread.start()
+            
+        except pylon.GenericException as e:
+            # Catch any errors specifically related to Basler camera API
+            QMessageBox.critical(self, "Basler Camera Error", f"Failed to connect to Basler Camera: {str(e)}")
 
-            self.textBrowser.setText("Basler Camera connected. Click 'Capture' to capture an image.")
         except Exception as e:
             QMessageBox.critical(self, "Basler Camera Error", f"Failed to connect to Basler Camera: {str(e)}")
-            self.textBrowser.setText("Failed to connect to Basler Camera.")
-    
+            
     # Handle the Basler camera capture    
     def capture_from_basler_camera(self):
         if self.is_basler_camera and self.basler_camera is not None:
@@ -683,6 +716,9 @@ class TehseenCode(QDialog):
     def quit_app(self):
         reply = QMessageBox.question(self, 'Confirm Quit', 'Are you sure you want to quit the app?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
+            # Stop all running cameras (both webcam and Basler)
+            self.stop_all_cameras()
+            
             if self.thread is not None:
                 self.thread.stop()
             QApplication.quit()
