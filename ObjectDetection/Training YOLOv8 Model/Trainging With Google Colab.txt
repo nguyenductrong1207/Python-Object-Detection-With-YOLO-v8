@@ -1,0 +1,35 @@
+Google Colab
+
+!cd /content/demo
+!wget https://huggingface.co/Ultralytics/YOLOv8/resolve/main/yolov8x.pt
+
+
+# !apt-get install unzip
+!cd /content/demo
+# !unzip -l "/content/demo/stone.zip"
+!unzip stone.zip
+# !file stone.zip
+#!apt-get install p7zip-full
+#!7z x stone.zip
+
+
+!pip install ultralytics
+
+
+from ultralytics import YOLO
+import os
+# HOMEDIR = 'C:\\1.software\\obj'
+# os.chdir(HOMEDIR)
+
+model = YOLO(r"/content/demo" + '/yolov8x.pt', task='runs')
+results = model.train(data=r'/content/demo/stone_demo/data.yaml', epochs = 450, imgsz=192 , device=0)
+
+
+data.yaml
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+names: 
+  0: heart
+  1: stone
