@@ -25,10 +25,18 @@ class BaslerVideoThread(QThread):
         self.wait()
 
     def convert_cv_qt(self, cv_img):
-        """Convert from OpenCV's BGR image format to Qt's QImage."""
-        rgb_image = cv_img[:, :, ::-1].copy()  # Convert BGR to RGB
-        h, w, ch = rgb_image.shape
-        bytes_per_line = ch * w
-        qt_img = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
-        scaled_img = qt_img.scaled(790, 610, QtCore.Qt.KeepAspectRatio)
+        """Convert from an OpenCV image to a QPixmap which is suitable for PyQt display."""
+        if len(cv_img.shape) == 2:
+            # Grayscale image, it doesn't have a color channel
+            h, w = cv_img.shape
+            qt_img = QImage(cv_img.data, w, h, w, QImage.Format_Grayscale8)
+        else:
+            # Color image, assumed to be in BGR format
+            rgb_image = cv_img[:, :, ::-1].copy()  # Convert BGR to RGB
+            h, w, ch = rgb_image.shape
+            bytes_per_line = ch * w
+            qt_img = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
+
+        # Scale the QImage to fit the designated UI label size
+        scaled_img = qt_img.scaled(790, 610, Qt.KeepAspectRatio)
         return scaled_img
