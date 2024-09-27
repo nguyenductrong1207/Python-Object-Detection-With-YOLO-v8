@@ -1,5 +1,5 @@
 from PyQt5 import QtCore
-from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtCore import QThread, pyqtSignal, Qt
 from PyQt5.QtGui import QImage
 import cv2
 from pypylon import pylon
@@ -38,5 +38,5 @@ class BaslerVideoThread(QThread):
             qt_img = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
 
         # Scale the QImage to fit the designated UI label size
-        scaled_img = qt_img.scaled(790, 610, Qt.KeepAspectRatio)
+        scaled_img = qt_img.scaled(790, 610, QtCore.Qt.KeepAspectRatio)
         return scaled_img

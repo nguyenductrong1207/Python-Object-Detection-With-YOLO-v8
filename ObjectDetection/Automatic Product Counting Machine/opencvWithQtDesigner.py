@@ -15,6 +15,7 @@ from hdbcli import dbapi
 import numpy as np
 from pypylon import pylon
 from baslerVideoThread import BaslerVideoThread  # Import the Basler video thread class
+import logging
 
 class TehseenCode(QDialog):
     def __init__(self):
@@ -153,40 +154,51 @@ class TehseenCode(QDialog):
         self.textBrowser.setText('Image captured')
         
     def stop_all_cameras(self):
-        # Stop the video thread if a regular camera (webcam) is running
+        # Stop the regular webcam thread
         if self.thread is not None:
             if self.thread.isRunning():
                 self.thread.stop()
+                self.thread.wait()  # Ensure the thread is completely stopped
             self.thread = None
 
-        # Stop the Basler camera thread if it is running
+        # Stop the Basler camera thread
         if self.basler_video_thread is not None:
             if self.basler_video_thread.isRunning():
                 self.basler_video_thread.stop()
+                self.basler_video_thread.wait()  # Ensure the thread is completely stopped
             self.basler_video_thread = None
 
-        # Close the Basler camera connection if it's open
+        # Close the Basler camera if it is open
         if self.basler_camera is not None:
             if self.basler_camera.IsOpen():
-                self.basler_camera.Close()
+                self.basler_camera.StopGrabbing()  # Ensure grabbing is stopped
+                self.basler_camera.Close()  # Close the camera
             self.basler_camera = None
     
     # Start the Basler Camera using the selected camera     
     def start_camera(self):
         selected_camera = self.cameraSelectCombo.currentText()
         
-        # Stop the existing camera (webcam or Basler) before switching
-        self.stop_all_cameras()
+        logging.info(f"Switching to camera: {selected_camera}")
+        
+        try:
+            # Stop all currently running cameras (both Basler and regular)
+            self.stop_all_cameras()
 
-        if selected_camera == "Basler Camera":
-            self.is_basler_camera = True
-            self.connect_basler_camera()
-        else:
-            self.is_basler_camera = False
-            
-            # Index - 1 because Basler Camera is the first option
-            camera_index = self.cameraSelectCombo.currentIndex() - 1
-            self.start_video(camera_index) # Start regular webcam stream
+            if selected_camera == "Basler Camera":
+                self.is_basler_camera = True
+                self.connect_basler_camera()  # Start Basler camera
+            else:
+                # Handle the regular webcam
+                self.is_basler_camera = False
+                
+                # Calculate the camera index (subtract 1 because Basler is first option)
+                camera_index = self.cameraSelectCombo.currentIndex() - 1
+                if camera_index >= 0:
+                    self.start_video(camera_index)  # Start the webcam stream
+        except Exception as e:
+            logging.error(f"Error starting camera: {str(e)}")
+            QMessageBox.critical(self, "Camera Error", f"Failed to switch camera: {str(e)}")
     
     # Connect to the Basler camera with camera IP       
     def connect_basler_camera(self):
@@ -219,8 +231,11 @@ class TehseenCode(QDialog):
     def capture_from_basler_camera(self):
         if self.is_basler_camera and self.basler_camera is not None:
             try:
+                if self.basler_camera.IsGrabbing():
+                    self.basler_camera.StopGrabbing()  # Stop the camera if it's currently grabbing
+                
                 # Capture the image from the Basler camera
-                grab_result = self.basler_camera.GrabOne(1000)
+                grab_result = self.basler_camera.GrabOne(5000)
                 if grab_result.GrabSucceeded():
                     image = grab_result.Array
 
