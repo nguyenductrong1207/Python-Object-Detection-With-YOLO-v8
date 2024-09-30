@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import (
     QMessageBox, QTableWidget, QTableWidgetItem, QFileDialog, QComboBox, QSplitter, QSpacerItem, QSizePolicy
 )
 from PyQt5.QtCore import Qt
+import numpy as np
 
 class StatisticalTransportationCostsAndIssueAnInvoice(QMainWindow):
     def __init__(self):
@@ -340,13 +341,22 @@ class StatisticalTransportationCostsAndIssueAnInvoice(QMainWindow):
             
             df = self.df_dict[sheet_name]
 
-            date_column = df.iloc[row_start - 2 : row_end - 1, 1]  # Column B 
-            location_column = df.iloc[row_start - 2 : row_end - 1, 5]  # Column F 
-
+            date_column = df.iloc[row_start - 2 : row_end - 1, 1]  # Column B (index 1)
+            # location_column = df.iloc[row_start - 2 : row_end - 1, 5]  # Column F (index 5)
+            
+            # Get values from column F (index 5) and column E (index 4)
+            value_in_column_f = df.iloc[row_start - 2 : row_end - 1, 5]  # Column F (index 5)
+            value_in_column_e = df.iloc[row_start - 2 : row_end - 1, 4]  # Column E (index 4)
+            # Use np.where to select values from column F if not empty, otherwise from column E
+            location_column_series = np.where(pd.notna(value_in_column_f), value_in_column_f, value_in_column_e)
+            # Convert the result back to a Pandas Series if you need further DataFrame-like operations
+            location_column = pd.Series(location_column_series)
+            
             # Ensure correct columns are referenced and handle NaN values
-            weight_column_g = pd.to_numeric(df.iloc[row_start - 2 : row_end - 1, 6].fillna(0), errors='coerce')  # Column G (index 6)
-            weight_column_i = pd.to_numeric(df.iloc[row_start - 2 : row_end - 1, 8].fillna(0), errors='coerce')  # Column I (index 8)
-            weight_column = weight_column_g + weight_column_i  # Sum of Columns G and I
+            weight_column_g = pd.to_numeric(df.iloc[row_start - 2 : row_end - 1, 6].fillna(0), errors='coerce').astype(float).astype(int)  # Column G (index 6)
+            weight_column_i = pd.to_numeric(df.iloc[row_start - 2 : row_end - 1, 8].fillna(0), errors='coerce').astype(float).astype(int)  # Column I (index 8)
+            weight_column_j = pd.to_numeric(df.iloc[row_start - 2 : row_end - 1, 9].fillna(0), errors='coerce').astype(float).astype(int)  # Column J (index 9)
+            weight_column = weight_column_g + weight_column_i  + weight_column_j # Sum of Columns G and I and J
 
             cost_column = df.iloc[row_start - 2 : row_end - 1, 16]  # Column Q 
 
@@ -386,6 +396,7 @@ class StatisticalTransportationCostsAndIssueAnInvoice(QMainWindow):
             self.left_total_weight_label.setVisible(True)
             
         except Exception as e:
+            print(e)
             QMessageBox.critical(self, "Error", str(e))
 
     # Slot for handling header click and sorting
