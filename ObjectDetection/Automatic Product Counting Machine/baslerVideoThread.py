@@ -14,11 +14,21 @@ class BaslerVideoThread(QThread):
 
     def run(self):
         while self._run_flag:
-            grab_result = self.basler_camera.GrabOne(1000)  # Capture a frame
-            if grab_result.GrabSucceeded():
-                image = grab_result.Array
-                qt_img = self.convert_cv_qt(image)
-                self.change_pixmap_signal.emit(qt_img)  # Emit the frame as a QImage
+            try:
+                # Attempt to capture a frame
+                grab_result = self.basler_camera.GrabOne(25000)  # 5000ms timeout
+                if grab_result.GrabSucceeded():
+                    image = grab_result.Array
+                    qt_img = self.convert_cv_qt(image)
+                    self.change_pixmap_signal.emit(qt_img)  # Emit the frame as a QImage
+                else:
+                    print("Frame capture failed. Grab did not succeed.")
+            except pylon.TimeoutException as e:
+                print(f"Error: Timeout occurred while grabbing frame: {str(e)}")
+                break  # Optionally, break the loop if you don't want to keep retrying
+            except Exception as e:
+                print(f"Error: An unexpected error occurred: {str(e)}")
+                break  # Break the loop to stop further processing
 
     def stop(self):
         self._run_flag = False

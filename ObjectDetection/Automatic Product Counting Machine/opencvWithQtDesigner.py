@@ -205,7 +205,13 @@ class TehseenCode(QDialog):
         try:
             # Connect to the Basler camera
             self.basler_camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateDevice(pylon.DeviceInfo().SetIpAddress("192.168.3.3")))
-            self.basler_camera.Open()
+            
+            if not self.basler_camera.IsOpen():
+                self.basler_camera.Open()
+
+            # Ensure the camera is not already grabbing
+            if self.basler_camera.IsGrabbing():
+                self.basler_camera.StopGrabbing()
 
             # Set camera settings
             max_width = self.basler_camera.Width.GetMax()
@@ -231,11 +237,11 @@ class TehseenCode(QDialog):
     def capture_from_basler_camera(self):
         if self.is_basler_camera and self.basler_camera is not None:
             try:
-                if self.basler_camera.IsGrabbing():
-                    self.basler_camera.StopGrabbing()  # Stop the camera if it's currently grabbing
+                # if self.basler_camera.IsGrabbing():
+                #     self.basler_camera.StopGrabbing()  # Stop the camera if it's currently grabbing
                 
                 # Capture the image from the Basler camera
-                grab_result = self.basler_camera.GrabOne(5000)
+                grab_result = self.basler_camera.GrabOne(25000)
                 if grab_result.GrabSucceeded():
                     image = grab_result.Array
 
@@ -254,34 +260,48 @@ class TehseenCode(QDialog):
 
             except Exception as e:
                 QMessageBox.critical(self, "Camera Error", f"Error capturing image from Basler camera: {str(e)}")
+                print(e)
 
         else:
             QMessageBox.warning(self, "Camera Not Connected", "Basler Camera is not connected. Please connect it first.")   
     
     # Detect connected cameras and populate the dropdown menu
     def detect_cameras(self):
-        # Detect connected cameras and populate the dropdown
-        camera_indices = []
-        # Check the first 4 indices (adjust as needed)
-        for i in range(4):  
+        # Add Basler Camera as the first option in cameraSelectCombo
+        self.cameraSelectCombo.addItem("Basler Camera")
+        
+        # Detect regular cameras and add them to the combo box
+        for i in range(5):  
             cap = cv2.VideoCapture(i)
-            
-            if cap is not None and cap.isOpened():
-                camera_indices.append(i)
+            if cap.isOpened():
+                self.cameraSelectCombo.addItem(f"Camera {i}")
                 cap.release()
-        
-        if not camera_indices:
-            self.cameraSelectCombo.addItem("No Cameras Detected")
-        else:
-            self.cameraSelectCombo.clear()
-            
-            # Add Basler Camera as the first option in cameraSelectCombo
-            self.cameraSelectCombo.addItem("Basler Camera")
-            
-            for index in camera_indices:
-                self.cameraSelectCombo.addItem(f"Camera {index}")
-        
+
         self.cameraSelectCombo.setCurrentIndex(0)
+        
+        # # Detect connected cameras and populate the dropdown
+        # camera_indices = []
+        
+        # # Check the first 4 indices (adjust as needed)
+        # for i in range(4):  
+        #     cap = cv2.VideoCapture(i)
+            
+        #     if cap is not None and cap.isOpened():
+        #         camera_indices.append(i)
+        #         cap.release()
+        
+        # if not camera_indices:
+        #     self.cameraSelectCombo.addItem("No Cameras Detected")
+        # else:
+        #     self.cameraSelectCombo.clear()
+            
+        #     # Add Basler Camera as the first option in cameraSelectCombo
+        #     self.cameraSelectCombo.addItem("Basler Camera")
+            
+        #     for index in camera_indices:
+        #         self.cameraSelectCombo.addItem(f"Camera {index}")
+        
+        # self.cameraSelectCombo.setCurrentIndex(0)
     
     # Get the selected camera index from the dropdown    
     def get_selected_camera_index(self):
