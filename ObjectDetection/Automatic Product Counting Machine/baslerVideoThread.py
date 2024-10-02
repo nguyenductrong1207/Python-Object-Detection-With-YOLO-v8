@@ -16,7 +16,7 @@ class BaslerVideoThread(QThread):
         while self._run_flag:
             try:
                 # Attempt to capture a frame
-                grab_result = self.basler_camera.GrabOne(25000)  # 5000ms timeout
+                grab_result = self.basler_camera.GrabOne(100000)  # 100000ms timeout
                 if grab_result.GrabSucceeded():
                     image = grab_result.Array
                     qt_img = self.convert_cv_qt(image)
@@ -32,6 +32,7 @@ class BaslerVideoThread(QThread):
 
     def stop(self):
         self._run_flag = False
+        self.basler_camera.StopGrabbing()
         self.wait()
 
     def convert_cv_qt(self, cv_img):

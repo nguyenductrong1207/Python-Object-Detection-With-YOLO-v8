@@ -168,23 +168,24 @@ class TehseenCode(QDialog):
                 self.basler_video_thread.wait()  # Ensure the thread is completely stopped
             self.basler_video_thread = None
 
-        # Close the Basler camera if it is open
+        # Close the Basler camera if it's open
         if self.basler_camera is not None:
+            if self.basler_camera.IsGrabbing():
+                self.basler_camera.StopGrabbing()  # Stop any ongoing grabbing session
             if self.basler_camera.IsOpen():
-                self.basler_camera.StopGrabbing()  # Ensure grabbing is stopped
-                self.basler_camera.Close()  # Close the camera
+                self.basler_camera.Close()  # Close the Basler camera connection
             self.basler_camera = None
     
     # Start the Basler Camera using the selected camera     
     def start_camera(self):
         selected_camera = self.cameraSelectCombo.currentText()
         
+        # Stop any currently running camera before starting the new one
+        self.stop_all_cameras()
+        
         logging.info(f"Switching to camera: {selected_camera}")
         
         try:
-            # Stop all currently running cameras (both Basler and regular)
-            self.stop_all_cameras()
-
             if selected_camera == "Basler Camera":
                 self.is_basler_camera = True
                 self.connect_basler_camera()  # Start Basler camera
@@ -196,6 +197,9 @@ class TehseenCode(QDialog):
                 camera_index = self.cameraSelectCombo.currentIndex() - 1
                 if camera_index >= 0:
                     self.start_video(camera_index)  # Start the webcam stream
+                else:
+                    QMessageBox.critical(self, "Error", f"Invalid camera index selected.")
+                    
         except Exception as e:
             logging.error(f"Error starting camera: {str(e)}")
             QMessageBox.critical(self, "Camera Error", f"Failed to switch camera: {str(e)}")
@@ -205,20 +209,21 @@ class TehseenCode(QDialog):
         try:
             # Connect to the Basler camera
             self.basler_camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateDevice(pylon.DeviceInfo().SetIpAddress("192.168.3.3")))
+            self.basler_camera.Open()
             
-            if not self.basler_camera.IsOpen():
-                self.basler_camera.Open()
+            # if not self.basler_camera.IsOpen():
+            #     self.basler_camera.Open()
 
-            # Ensure the camera is not already grabbing
-            if self.basler_camera.IsGrabbing():
-                self.basler_camera.StopGrabbing()
+            # # Ensure the camera is not already grabbing
+            # if self.basler_camera.IsGrabbing():
+            #     self.basler_camera.StopGrabbing()
 
             # Set camera settings
             max_width = self.basler_camera.Width.GetMax()
             max_height = self.basler_camera.Height.GetMax()
             self.basler_camera.Width.SetValue(max_width)
             self.basler_camera.Height.SetValue(max_height)
-            self.basler_camera.Gain.SetValue(10)
+            self.basler_camera.Gain.SetValue(15)
             self.basler_camera.ExposureTime.SetValue(5000)
             
             # Start the Basler video thread to display the video feed in real-time
@@ -229,55 +234,112 @@ class TehseenCode(QDialog):
         except pylon.GenericException as e:
             # Catch any errors specifically related to Basler camera API
             QMessageBox.critical(self, "Basler Camera Error", f"Failed to connect to Basler Camera: {str(e)}")
+            logging.error(f"Basler Camera Error: {str(e)}")
 
         except Exception as e:
             QMessageBox.critical(self, "Basler Camera Error", f"Failed to connect to Basler Camera: {str(e)}")
+            logging.error(f"Basler Camera Error: {str(e)}")
             
     # Handle the Basler camera capture    
     def capture_from_basler_camera(self):
         if self.is_basler_camera and self.basler_camera is not None:
             try:
-                # if self.basler_camera.IsGrabbing():
-                #     self.basler_camera.StopGrabbing()  # Stop the camera if it's currently grabbing
-                
+                # Check if the camera is grabbing frames (from video feed)
+                if self.basler_camera.IsGrabbing():
+                    self.basler_camera.StopGrabbing()  # Stop grabbing video frames temporarily for image capture
+
+                print("Attempting to grab a frame from the Basler camera...")
+
                 # Capture the image from the Basler camera
-                grab_result = self.basler_camera.GrabOne(25000)
+                grab_result = self.basler_camera.GrabOne(100000)  # 100000ms = 100s timeout
+                print("Frame grab attempt completed.")
+
+                # Check if the grab was successful
                 if grab_result.GrabSucceeded():
+                    print("Frame grab succeeded.")
                     image = grab_result.Array
 
                     # Define the path for the image
                     img_path = os.path.join(self.img_folder, f"basler_image{self.value}.png")
-                
-                    # Save the image captured from Basler camera
+
+                    # Save the image captured from the Basler camera
                     cv2.imwrite(img_path, image)
                     self.value += 1  # Increment image counter
 
-                    # Now that the image is saved, detect and display the image
-                    self.detect_image_and_display(img_path)  # Detect objects and display the image
+                    print(f"Image saved to: {img_path}")
 
+                    # Detect and display the image
+                    self.detect_image_and_display(img_path)
                 else:
                     QMessageBox.critical(self, "Capture Failed", "Failed to capture image from Basler camera.")
+                    print("Frame grab failed.")
+
+                # Resume the video stream after capturing the image
+                self.start_basler_video_stream()  
+
+            except pylon.TimeoutException as te:
+                # Specific handling for a timeout
+                QMessageBox.critical(self, "Camera Timeout", f"Timeout occurred while capturing image: {str(te)}")
+                print(f"TimeoutException: {te}")
+                self.start_basler_video_stream()  # Resume video stream
+
+            except pylon.GenericException as ge:
+                # Handle other Pylon-specific exceptions
+                QMessageBox.critical(self, "Pylon Error", f"Pylon-specific error occurred: {str(ge)}")
+                print(f"GenericException: {ge}")
+                self.start_basler_video_stream()  # Resume video stream
 
             except Exception as e:
+                # Catch any other general exceptions
                 QMessageBox.critical(self, "Camera Error", f"Error capturing image from Basler camera: {str(e)}")
-                print(e)
+                print(f"General exception: {e}")
+                self.start_basler_video_stream()  # Resume video stream
 
         else:
-            QMessageBox.warning(self, "Camera Not Connected", "Basler Camera is not connected. Please connect it first.")   
+            QMessageBox.warning(self, "Camera Not Connected", "Basler Camera is not connected. Please connect it first.")
+            print("Basler Camera is not connected.") 
+            
+    def start_basler_video_stream(self):
+        try:
+            # # Start the continuous grabbing session for video feed
+            # self.basler_camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly)
+            
+            # Start the video thread for updating the video feed in the UI
+            self.basler_video_thread = BaslerVideoThread(self.basler_camera)
+            self.basler_video_thread.change_pixmap_signal.connect(self.update_image)
+            self.basler_video_thread.start()
+
+        except Exception as e:
+            QMessageBox.critical(self, "Camera Error", f"Error starting video stream: {str(e)}") 
     
     # Detect connected cameras and populate the dropdown menu
     def detect_cameras(self):
-        # Add Basler Camera as the first option in cameraSelectCombo
-        self.cameraSelectCombo.addItem("Basler Camera")
-        
-        # Detect regular cameras and add them to the combo box
-        for i in range(5):  
+        available_cameras = []
+        for i in range(5):  # Assuming you want to check up to 5 cameras
             cap = cv2.VideoCapture(i)
             if cap.isOpened():
-                self.cameraSelectCombo.addItem(f"Camera {i}")
+                available_cameras.append(f"Camera {i}")
                 cap.release()
 
-        self.cameraSelectCombo.setCurrentIndex(0)
+        # Add Basler Camera option
+        available_cameras.insert(0, "Basler Camera")
+        self.cameraSelectCombo.addItems(available_cameras)
+        
+        ###############
+        
+        # # Add Basler Camera as the first option in cameraSelectCombo
+        # self.cameraSelectCombo.addItem("Basler Camera")
+        
+        # # Detect regular cameras and add them to the combo box
+        # for i in range(5):  
+        #     cap = cv2.VideoCapture(i)
+        #     if cap.isOpened():
+        #         self.cameraSelectCombo.addItem(f"Camera {i}")
+        #         cap.release()
+
+        # self.cameraSelectCombo.setCurrentIndex(0)
+        
+        ###############
         
         # # Detect connected cameras and populate the dropdown
         # camera_indices = []
@@ -721,9 +783,8 @@ class TehseenCode(QDialog):
     def reload_app(self):
         reply = QMessageBox.question(self, 'Confirm Reload', 'Are you sure you want to reload the app?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.Yes:
-            # Stop the video thread
-            if self.thread is not None:
-                self.thread.stop()
+            # Stop all running cameras (both webcam and Basler)
+            self.stop_all_cameras()  # Ensure all camera resources are released
             
             # Clear the UI elements if necessary
             self.imgLabel.clear()
