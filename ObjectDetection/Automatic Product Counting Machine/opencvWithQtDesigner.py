@@ -73,8 +73,9 @@ class TehseenCode(QDialog):
         self.cameraBtn.clicked.connect(self.start_camera)
         
         self.captureBtn.clicked.connect(self.capture_new_image)
+        # self.captureBtn.clicked.connect(self.capture_and_detect_image) 
+
         self.detectLastestImgBtn.clicked.connect(self.detect_latest_image)
-        
         self.baslerCameraBtn.clicked.connect(self.capture_from_basler_camera)
         
         # Setup the layout for displaying images
@@ -251,7 +252,7 @@ class TehseenCode(QDialog):
                 print("Attempting to grab a frame from the Basler camera...")
 
                 # Capture the image from the Basler camera
-                grab_result = self.basler_camera.GrabOne(100000)  # 100000ms = 100s timeout
+                grab_result = self.basler_camera.GrabOne(120000)  # 120000ms = 120s timeout
                 print("Frame grab attempt completed.")
 
                 # Check if the grab was successful
@@ -324,47 +325,7 @@ class TehseenCode(QDialog):
         # Add Basler Camera option
         available_cameras.insert(0, "Basler Camera")
         self.cameraSelectCombo.addItems(available_cameras)
-        
-        ###############
-        
-        # # Add Basler Camera as the first option in cameraSelectCombo
-        # self.cameraSelectCombo.addItem("Basler Camera")
-        
-        # # Detect regular cameras and add them to the combo box
-        # for i in range(5):  
-        #     cap = cv2.VideoCapture(i)
-        #     if cap.isOpened():
-        #         self.cameraSelectCombo.addItem(f"Camera {i}")
-        #         cap.release()
-
-        # self.cameraSelectCombo.setCurrentIndex(0)
-        
-        ###############
-        
-        # # Detect connected cameras and populate the dropdown
-        # camera_indices = []
-        
-        # # Check the first 4 indices (adjust as needed)
-        # for i in range(4):  
-        #     cap = cv2.VideoCapture(i)
-            
-        #     if cap is not None and cap.isOpened():
-        #         camera_indices.append(i)
-        #         cap.release()
-        
-        # if not camera_indices:
-        #     self.cameraSelectCombo.addItem("No Cameras Detected")
-        # else:
-        #     self.cameraSelectCombo.clear()
-            
-        #     # Add Basler Camera as the first option in cameraSelectCombo
-        #     self.cameraSelectCombo.addItem("Basler Camera")
-            
-        #     for index in camera_indices:
-        #         self.cameraSelectCombo.addItem(f"Camera {index}")
-        
-        # self.cameraSelectCombo.setCurrentIndex(0)
-    
+                
     # Get the selected camera index from the dropdown    
     def get_selected_camera_index(self):
         # Stop the video thread
@@ -402,89 +363,6 @@ class TehseenCode(QDialog):
         
         return detected_image_path
 
-    # # Draw bounding boxes on the detected objects in the image
-    # def draw_bounding_boxes(self, image_path, results, output_dir):
-    #     img = cv2.imread(image_path)
-    #     if img is None:
-    #         print(f"Error: Unable to open image file {image_path}")
-    #         return image_path
-
-    #     height, width, _ = img.shape
-    #     font = cv2.FONT_HERSHEY_SIMPLEX
-    #     font_scale = width / 1500
-    #     font_thickness = 2
-    #     text_color = (0, 0, 255)
-    #     bg_color = (0, 0, 0)
-            
-    #     # Extract bounding boxes and sort them
-    #     boxes = [(box.xyxy[0].cpu().numpy().astype(int), idx) for idx, box in enumerate(results[0].boxes)]
-        
-    #     # Debug: Print the number of boxes extracted before sorting
-    #     print(f"Total bounding boxes extracted: {len(boxes)}")
-        
-    #     # Check if boxes list is empty
-    #     if not boxes:  
-    #         QMessageBox.information(self, "No Objects Detected", "No objects were detected in the image.", QMessageBox.Ok)
-    #         return image_path
-        
-    #     row_threshold = height // 100  # This threshold may need to be adjusted
-
-    #     # First, sort by the y1 coordinate (top of the box)
-    #     boxes.sort(key=lambda b: b[0][1])
-
-    #     # Then, within each row group, sort by the x1 coordinate (left of the box)
-    #     sorted_boxes = []
-    #     current_row = []
-    #     last_y = boxes[0][0][1]
-    #     for box, idx in boxes:
-    #         if abs(box[1] - last_y) > row_threshold:
-    #             sorted_boxes.extend(sorted(current_row, key=lambda b: b[0][0]))  # Sort by x1 within the row
-    #             current_row = []
-    #             last_y = box[1]
-    #         current_row.append((box, idx))
-    #     sorted_boxes.extend(sorted(current_row, key=lambda b: b[0][0]))  # Sort the last row
-
-    #     # Debug: Print the number of labels after sorting
-    #     print(f"Total labels after sorting: {len(sorted_boxes)}")
-        
-    #     # Draw bounding boxes and labels for each detected object in the correct order
-    #     for new_idx, (box, original_idx) in enumerate(sorted_boxes, start=1):
-    #         x1, y1, x2, y2 = box
-    #         label = f"{new_idx}"
-    #         text_size = cv2.getTextSize(label, font, font_scale, font_thickness)[0]
-    #         text_x = x1 + 5
-    #         text_y = y1 - 10 if y1 - 10 > 0 else y1 + text_size[1] + 10
-
-    #         cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
-    #         cv2.rectangle(img, (text_x - 5, text_y - text_size[1] - 5),
-    #                       (text_x + text_size[0] + 5, text_y + 5), bg_color, -1)
-    #         cv2.putText(img, label, (text_x, text_y), font, font_scale, text_color, font_thickness)
-            
-    #         # Debug: Print the bounding box coordinates and the label
-    #         print(f"Bounding box {new_idx}: x1={x1}, y1={y1}, x2={x2}, y2={y2}, label={label}")
-
-    #     # Add a title showing the total number of detected objects
-    #     num_boxes = results[0].boxes.shape[0] if len(results[0].boxes.shape) > 0 else 0
-    #     font_scale = width / 800
-    #     font_thickness_title = 4
-    #     title = f"Detected {num_boxes} objects"
-    #     text_size = cv2.getTextSize(title, font, font_scale, font_thickness_title)[0]
-    #     text_x = (width - text_size[0]) - 20
-    #     text_y = text_size[1] + 10
-    #     text_color = (255, 255, 255)
-    #     bg_color = (0, 0, 0)
-    #     cv2.rectangle(img, (text_x - 10, text_y - text_size[1] - 10), 
-    #                   (text_x + text_size[0] + 10, text_y + 10), bg_color, -1)
-    #     cv2.putText(img, title, (text_x, text_y), font, font_scale, text_color, font_thickness)
-
-    #     # Save the annotated image and update the UI
-    #     output_filename = f'annotated_{os.path.basename(image_path)}'
-    #     output_path = os.path.join(output_dir, output_filename)
-    #     cv2.imwrite(output_path, img)
-        
-    #     print(f"Annotated image saved at {output_path}")
-    #     return output_path
-    
     # Draw bounding boxes on the detected objects in the image
     def draw_bounding_boxes(self, image_path, results, output_dir):
         img = cv2.imread(image_path)
@@ -656,6 +534,13 @@ class TehseenCode(QDialog):
         else:
             QMessageBox.critical(self, "Error", "Please connect to a camera to capture")
             
+    def capture_and_detect_image(self):
+        # Check if we are using the Basler camera
+        if self.is_basler_camera and self.basler_camera is not None:
+            self.capture_from_basler_camera()  # Call the Basler camera capture logic
+        else:
+            self.capture_new_image()  # Call the web camera capture logic
+   
     def detect_latest_image(self):
         # Change the img folder link with your PC link
         img_folder = r"D:\Github\Python-Object-Detection-With-YOLO-v8\ObjectDetection\ObjectDectecionWithOpenCV\img"
@@ -741,11 +626,6 @@ class TehseenCode(QDialog):
                 
     # Get the currently selected cell in the active Excel sheet and update the active sheet reference
     def get_selected_cell(self):
-        # Check if the 'excel_wb' attribute exists
-        # if not hasattr(self, 'excel_wb') or self.excel_wb is None:
-        #     QMessageBox.critical(self, "Error", "Don't have any opened Excel file")
-        #     return None
-        
         try:
             # Update the active sheet to the currently active one
             self.excel_sheet = self.excel_wb.sheets.active
@@ -759,7 +639,6 @@ class TehseenCode(QDialog):
             return address
         except Exception as e:
             print(f"Error getting selected cell: {e}")
-            # QMessageBox.critical(self, "Error", "Error when getting selected cell") 
         
     # Undo the last operation and update the counter
     def undo_reset_counter(self):
