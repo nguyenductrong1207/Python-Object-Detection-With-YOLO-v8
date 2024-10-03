@@ -71,12 +71,8 @@ class TehseenCode(QDialog):
         self.quitBtn.clicked.connect(self.quit_app)
         
         self.cameraBtn.clicked.connect(self.start_camera)
-        
-        self.captureBtn.clicked.connect(self.capture_new_image)
-        # self.captureBtn.clicked.connect(self.capture_and_detect_image) 
-
+        self.captureBtn.clicked.connect(self.capture_and_detect_image) 
         self.detectLastestImgBtn.clicked.connect(self.detect_latest_image)
-        self.baslerCameraBtn.clicked.connect(self.capture_from_basler_camera)
         
         # Setup the layout for displaying images
         layout = QHBoxLayout()
@@ -358,7 +354,7 @@ class TehseenCode(QDialog):
         # self.total_detected_objects += num_detected_objects
         # self.SUMLIST.append(num_detected_objects)
         elements = " + ".join(map(str, self.SUMLIST))
-        self.textBrowser.setText(f'Total: {elements} = {self.total_detected_objects}')
+        self.textBrowser.setText(f'Total Objects: {elements} = {self.total_detected_objects}')
         self.totalObjectsLabel.setText(f'Total Objects: {self.total_detected_objects}')
         
         return detected_image_path
@@ -491,10 +487,8 @@ class TehseenCode(QDialog):
         options = QFileDialog.Options()
         file_name, _ = QFileDialog.getOpenFileName(self, "Open Image File", "", "Images (*.png *.xpm *.jpg *.jpeg *.bmp);;All Files (*)", options=options)
         if file_name:
-            # Stop the video thread
-            if self.thread is not None:
-                self.thread.stop()   
-                self.thread = None 
+            # Stop all running cameras (both webcam and Basler)
+            self.stop_all_cameras()  # Ensure all camera resources are released
             
             try:
                 # Use QTimer.singleShot with a lambda or partial to delay image display
@@ -554,10 +548,8 @@ class TehseenCode(QDialog):
                 QMessageBox.warning(self, "No Images", "No images found in the 'img' folder.")
                 return
 
-            # Stop the video thread
-            if self.thread is not None:
-                self.thread.stop()   
-                self.thread = None 
+            # Stop all running cameras (both webcam and Basler)
+            self.stop_all_cameras()  # Ensure all camera resources are released
                 
             # Find the latest image by modification time
             latest_image = max(images, key=os.path.getmtime)
